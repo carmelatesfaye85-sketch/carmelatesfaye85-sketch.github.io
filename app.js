@@ -1655,6 +1655,63 @@ const tickerBand = (items) => {
   return `<div class="lp-ticker" aria-hidden="true"><div class="lp-ticker-track">${row}${row}${row}${row}</div></div>`;
 };
 
+// The six scenes of "does this sound familiar": one big word and one colour each.
+const LP_SCENES = [["3 HOURS", "#F7D774"], ["FOCUS", "#A9BCF5"], ["COMPARE", "#F5A9C0"], ["NOISE", "#8ED8C0"], ["HABIT", "#C8B0F0"], ["TOGETHER", "#F5A58C"]];
+
+/** Dot: the dot from the OwnIt logo, as a small character. He acts out every scene of the story. */
+function lpRig() {
+  const N = "#12224A", M = "#F2EFE6";
+  const eye = (x) => `<g class="d-eye"><ellipse cx="${x}" cy="158" rx="14" ry="16" fill="#fff"/><circle class="d-pupil" cx="${x}" cy="160" r="6.5" fill="${N}"/><rect class="d-lid" x="${x - 16}" y="140" width="32" height="20" fill="${N}"/><rect class="d-blink" x="${x - 16}" y="140" width="32" height="20" fill="${N}"/></g>`;
+  const pill = (x, y, w, t, dot) => `<rect x="${x}" y="${y}" width="${w}" height="28" rx="14" fill="${N}"/>${dot ? `<circle cx="${x + 15}" cy="${y + 14}" r="5" fill="${dot}"/>` : ""}<text x="${x + (dot ? 27 : 14)}" y="${y + 18.5}" fill="#fff" font-size="12" font-weight="700">${t}</text>`;
+  const photo = (x, y, r, a, b, likes) => `<g transform="rotate(${r} ${x + 36} ${y + 46})"><g class="d-float"><rect x="${x}" y="${y}" width="72" height="92" rx="12" fill="#fff"/><rect x="${x + 7}" y="${y + 7}" width="58" height="58" rx="8" fill="url(#${a})"/><text x="${x + 9}" y="${y + 82}" fill="#E1306C" font-size="11" font-weight="700">♥ ${likes}</text></g></g>`;
+  const mini = (x, look) => `<g class="d-float"><circle cx="${x}" cy="214" r="30" fill="${N}"/><ellipse cx="${x - 10}" cy="208" rx="7" ry="8" fill="#fff"/><ellipse cx="${x + 10}" cy="208" rx="7" ry="8" fill="#fff"/><circle cx="${x - 10 + look}" cy="212" r="3.4" fill="${N}"/><circle cx="${x + 10 + look}" cy="212" r="3.4" fill="${N}"/><rect x="${x - 9}" y="226" width="18" height="26" rx="4" fill="#fff" stroke="${N}" stroke-width="3"/></g>`;
+  const chips = ["Breaking", "Top 10", "Hot take", "Viral", "Just in", "Must-watch"];
+  return `
+  <svg class="rig" viewBox="0 0 320 300" fill="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="rg-a" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#FFD36E"/><stop offset="1" stop-color="#FF7A59"/></linearGradient>
+      <linearGradient id="rg-b" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#7EE8FA"/><stop offset="1" stop-color="#3F7BD9"/></linearGradient>
+      <linearGradient id="rg-c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#F9A8D4"/><stop offset="1" stop-color="#A855F7"/></linearGradient>
+    </defs>
+    <g class="rig-ring"><g><path d="M160 54A116 116 0 1 0 276 165" stroke="#fff" stroke-opacity=".6" stroke-width="15" stroke-linecap="round"/></g></g>
+
+    <g class="pr s0"><circle cx="258" cy="70" r="30" fill="#fff"/><path class="d-hand-h" d="M258 70v-13" stroke="${N}" stroke-width="5" stroke-linecap="round"/><path class="d-hand-m" d="M258 70v-21" stroke="${N}" stroke-width="3.5" stroke-linecap="round"/><circle cx="258" cy="70" r="3.5" fill="${N}"/></g>
+    <g class="pr s0 d2"><text class="d-zz" x="44" y="92" fill="${N}" font-size="22" font-weight="800">z</text><text class="d-zz z2" x="62" y="66" fill="${N}" font-size="30" font-weight="800">z</text></g>
+    <g class="pr s2">${photo(26, 22, -12, "rg-a", "rg-b", "12.4k")}${photo(124, 2, 0, "rg-b", "rg-a", "21k")}${photo(222, 24, 11, "rg-c", "rg-a", "8.9k")}</g>
+    <g class="pr s3 d-rain">${chips.map((c, i) => `<g class="d-chip" style="--i:${i}"><rect x="${[18, 196, 96, 232, 40, 150][i]}" y="-6" width="${c.length * 7 + 20}" height="24" rx="12" fill="#fff"/><text x="${[18, 196, 96, 232, 40, 150][i] + 10}" y="10" fill="${N}" font-size="11" font-weight="700">${c}</text></g>`).join("")}</g>
+    <g class="pr s5">${mini(52, 2)}${mini(268, -2)}</g>
+
+    <g class="rig-char">
+      <ellipse class="d-shadow" cx="160" cy="270" rx="58" ry="8" fill="${N}" fill-opacity=".16"/>
+      <path class="d-leg" d="M142 224v36h-10M178 224v36h10" stroke="${N}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+      <g class="d-body">
+        <circle cx="160" cy="170" r="62" fill="${N}"/>
+        ${eye(140)}${eye(180)}
+        <path class="d-mouth m-flat" d="M149 198h22" stroke="${M}" stroke-width="4" stroke-linecap="round"/>
+        <circle class="d-mouth m-o" cx="160" cy="199" r="5" stroke="${M}" stroke-width="4"/>
+        <path class="d-mouth m-sad" d="M148 203q12-11 24 0" stroke="${M}" stroke-width="4" stroke-linecap="round"/>
+        <path class="d-mouth m-wavy" d="M146 199q5-6 9 0t9 0 9 0" stroke="${M}" stroke-width="4" stroke-linecap="round"/>
+      </g>
+      <g class="d-arm l"><path d="M104 190L84 236" stroke="${N}" stroke-width="7" stroke-linecap="round"/><circle cx="84" cy="236" r="7" fill="${N}"/></g>
+      <g class="d-arm r"><path d="M216 190L236 236" stroke="${N}" stroke-width="7" stroke-linecap="round"/><circle cx="236" cy="236" r="7" fill="${N}"/></g>
+      <g class="pr s0 s5 d-held"><rect x="138" y="204" width="44" height="64" rx="9" fill="#fff" stroke="${N}" stroke-width="5"/><path d="M155 228l13 8-13 8z" fill="${N}"/></g>
+      <g class="pr s1 d-held"><path d="M112 216l48 10 48-10v38l-48 10-48-10z" fill="#fff" stroke="${N}" stroke-width="5" stroke-linejoin="round"/><path d="M160 226v38M124 228l24 5M124 238l24 5M172 233l24-5M172 243l24-5" stroke="${N}" stroke-width="3" stroke-linecap="round"/></g>
+    </g>
+
+    <g class="pr s1 d-ping" style="--i:0">${pill(8, 96, 112, "New message", "#F28D7C")}</g>
+    <g class="pr s1 d-ping" style="--i:1">${pill(206, 44, 104, "3 new likes", "#F7D774")}</g>
+    <g class="pr s1 d-ping" style="--i:2">${pill(214, 118, 100, "Tagged you", "#8ED8C0")}</g>
+    <g class="pr s2 d1">${pill(196, 236, 58, "♥ 3", "")}</g>
+    <g class="pr s3 d1">${pill(184, 250, 128, "800+ posts today", "")}</g>
+    <g class="pr s4"><g transform="rotate(14 276 244)"><rect x="258" y="216" width="36" height="56" rx="8" fill="#fff" stroke="${N}" stroke-width="5"/><circle class="d-buzz" cx="276" cy="232" r="5" fill="#F28D7C"/></g></g>
+    <g class="pr s4 d1">${pill(14, 64, 98, "205× today", "")}</g>
+    <g class="pr s5 d1"><ellipse cx="160" cy="284" rx="156" ry="13" fill="#fff" fill-opacity=".75"/></g>
+  </svg>`;
+}
+
+/** Dot, small: peeks over the demo phone and sits on the last button. */
+const dotMini = (cls = "") => `<svg class="dot-mini ${cls}" viewBox="0 0 120 120" fill="none" aria-hidden="true"><circle class="dm-body" cx="60" cy="62" r="46"/><ellipse cx="45" cy="52" rx="11" ry="13" fill="#fff"/><ellipse cx="75" cy="52" rx="11" ry="13" fill="#fff"/><circle class="dm-p" cx="45" cy="54" r="5.5"/><circle class="dm-p" cx="75" cy="54" r="5.5"/><path class="dm-smile" d="M48 80q12 10 24 0" stroke-width="4" stroke-linecap="round"/></svg>`;
+
 const LP_HOW = [
   ["Say what you want", "Type what you're looking for before you go in."],
   ["Go straight to it", "OwnIt opens the search results, not the feed, with a timer you choose."],
@@ -1672,7 +1729,7 @@ function lpHow() {
         ${LP_HOW.map(([h, t], i) => `<li data-how="${i}" class="${i ? "" : "on"}" style="--dur:${[2.9, 3.5, 6.2][i]}s"><button type="button" class="lp-how-tab"><span class="lp-step-n">0${i + 1}</span><h3>${h}</h3></button><p>${t}</p><i class="lp-how-bar"></i></li>`).join("")}
       </ol>
     </div>
-    <div class="lp-how-phone reveal zoom" aria-hidden="true"><div class="hp-body">
+    <div class="lp-how-phone reveal zoom" aria-hidden="true"><div class="hp-peek">${dotMini()}</div><div class="hp-body"><div class="hp-tilt">
       <div class="hp-screen">
         <div class="hp-view hp-home">
           <span class="hp-mark">${ICONS.logo}</span>
@@ -1694,7 +1751,7 @@ function lpHow() {
         <div class="hp-view hp-win"><span class="hp-mark big">${ICONS.logo}</span><b>Loop broken.</b></div>
         <div class="hp-view hp-up"><span class="hp-mark big">${ICONS.logo}</span><b>Time's up</b><small>Did you find “easy injera recipe”?</small></div>
       </div>
-    </div></div>
+    </div></div></div>
   </div>`;
 }
 
@@ -1740,16 +1797,16 @@ function viewLanding() {
         <h2 class="lp-h2 split">${splitWords("Does any of this sound familiar?")}</h2>
       </div>
       <div class="lp-qs-scroll">
-        <div class="lp-qs-pin">
-          <div class="lp-qs-track">
+        <div class="lp-qs-pin" data-scene="0" style="--c0:${LP_SCENES[0][1]}">
+          <div class="sc-bg" aria-hidden="true"><i></i><i></i></div>
+          <div class="sc-words" aria-hidden="true"><div>${LP_SCENES.map(([w]) => `<span style="--k:${w.length}">${w}</span>`).join("")}</div></div>
+          <div class="sc-stage">${lpRig()}</div>
+          <div class="sc-copy">
             ${LP_QUESTIONS.map((q, i) => `
-            <article class="lp-card ${i ? "" : "on"}">
-              <div class="lp-card-art art-${q.art}" aria-hidden="true"><div class="lp-art-fit">${lpArt(q.art)}</div></div>
-              <div class="lp-card-text">
-                <span class="lp-q-n">0${i + 1} <i>/ 0${n}</i></span>
-                <h3 class="lp-q-text">${esc(q.title)}</h3>
-                <p class="lp-p">${esc(q.body)}</p>
-              </div>
+            <article class="sc-text ${i ? "" : "on"}">
+              <span class="lp-q-n">0${i + 1} <i>/ 0${n}</i></span>
+              <h3 class="lp-q-text">${esc(q.title)}</h3>
+              <p class="lp-p">${esc(q.body)}</p>
             </article>`).join("")}
           </div>
           <div class="lp-qs-nav" aria-hidden="true"><b data-qs-n>01</b><div class="lp-qs-bar"><i></i></div><span>0${n}</span></div>
@@ -1810,6 +1867,7 @@ function viewLanding() {
       <h2 class="lp-h1 lp-cta-h"><span class="lp-soft reveal from-l">Own your social media.</span><span class="reveal from-r" style="--d:1">Own your life.</span></h2>
       <p class="lp-p reveal" style="--d:2">Free. Takes a minute to set up.</p>
       <div class="lp-cta-row reveal zoom" style="--d:3">
+        <span class="lp-cta-dot" aria-hidden="true">${dotMini("happy")}</span>
         <button class="btn lp-btn magnet" data-action="open-auth" data-mode="signup">Start owning it</button>
         <button class="lp-link" data-action="open-auth" data-mode="signin">I already have an account</button>
       </div>
@@ -1861,18 +1919,14 @@ function initLanding() {
   // scroll-linked motion: progress bar, hero drift, ticker speed
   const hero = root.querySelector(".lp-hero"), heroWrap = root.querySelector(".lp-hero-wrap");
   const bands = root.querySelector(".lp-bands");
-  const qsScroll = root.querySelector(".lp-qs-scroll"), qsTrack = root.querySelector(".lp-qs-track");
-  const qsCards = [...root.querySelectorAll(".lp-card")], qsN = root.querySelector("[data-qs-n]"), qsBar = root.querySelector(".lp-qs-bar i");
+  const qsScroll = root.querySelector(".lp-qs-scroll"), qsPin = root.querySelector(".lp-qs-pin");
+  const qsTexts = [...root.querySelectorAll(".sc-text")], qsN = root.querySelector("[data-qs-n]"), qsBar = root.querySelector(".lp-qs-bar i");
+  const scWords = root.querySelector(".sc-words > div"), scBg = [...root.querySelectorAll(".sc-bg i")], scRig = root.querySelector(".sc-stage .rig"), scRing = root.querySelector(".rig-ring");
   const scrubEl = root.querySelector("[data-scrub]"), scrubWords = scrubEl ? [...scrubEl.querySelectorAll(".sc")] : [];
-  let lit = -1, qsOn = -1, qsStep = 0;
+  let lit = -1, qsOn = -1, qsAt = -1;
   const howPhone = root.querySelector(".lp-how-phone");
   const measure = () => {
     if (howPhone?.clientHeight) root.style.setProperty("--hs", (howPhone.clientHeight / 540).toFixed(4));
-    if (!pin || !qsCards.length) return;
-    const gap = parseFloat(getComputedStyle(qsTrack).columnGap) || 0;
-    qsStep = qsCards[0].offsetWidth + gap;
-    const art = qsCards[0].querySelector(".lp-card-art");
-    root.style.setProperty("--as", Math.min(1.05, Math.max(.5, (art?.clientHeight || 330) / 340)).toFixed(3));
   };
   const frame = () => {
     const y = window.scrollY || 0, vh = innerHeight, max = Math.max(1, document.documentElement.scrollHeight - vh);
@@ -1887,23 +1941,30 @@ function initLanding() {
       const r = bands.getBoundingClientRect();
       if (r.bottom > -200 && r.top < vh + 200) root.style.setProperty("--bx", ((r.top - vh / 2) * .55).toFixed(1) + "px");
     }
-    // 3. the questions: the page holds still and the cards swipe past sideways
-    if (pin && qsScroll && qsCards.length) {
-      const r = qsScroll.getBoundingClientRect(), n = qsCards.length;
+    // 3. the questions: the page holds still while Dot acts out each one. The colour washes out from him,
+    //    the big word slides past, and he hops into the next scene.
+    if (pin && qsScroll && qsTexts.length) {
+      const r = qsScroll.getBoundingClientRect(), n = qsTexts.length;
+      root.classList.toggle("on-stage", r.top <= 56 && r.bottom >= 56);   // the top bar sits on the coloured scene
       if (r.bottom > -vh && r.top < vh * 2) {
         const f = clamp01(-r.top / Math.max(1, r.height - vh)) * (n - 1);
         const i = Math.min(n - 1, Math.floor(f));
-        const p = Math.min(n - 1, i + ease(clamp01((f - i - .2) / .6)));   // rest on a card, then swipe to the next
-        qsTrack.style.transform = `translate3d(${(-p * qsStep).toFixed(1)}px,0,0)`;
-        qsCards.forEach((c, k) => {
-          const o = k - p, a = Math.min(1, Math.abs(o));
-          c.style.transform = `perspective(1000px) rotateY(${(Math.max(-1, Math.min(1, o)) * -16).toFixed(2)}deg) scale(${(1 - a * .1).toFixed(3)})`;
-          c.style.opacity = (1 - a * .6).toFixed(3);
-        });
+        const e = i >= n - 1 ? 0 : ease(clamp01((f - i - .22) / .56));   // rest on a scene, then move to the next
+        const p = i + e, hop = Math.sin(e * Math.PI);
+        if (i !== qsAt) {
+          qsAt = i;
+          scBg[0].style.background = LP_SCENES[i][1];
+          scBg[1].style.background = LP_SCENES[Math.min(n - 1, i + 1)][1];
+        }
+        scBg[1].style.clipPath = `circle(${(e * 150).toFixed(1)}% at 50% 38%)`;
+        if (scWords) scWords.style.transform = `translate3d(${(-15 - p * 130).toFixed(2)}vw,0,0)`;
+        if (scRig) scRig.style.transform = `translateY(${(-hop * 38).toFixed(1)}px) rotate(${(Math.sin(e * Math.PI * 2) * 6).toFixed(2)}deg) scale(${(1 + hop * .05).toFixed(3)}, ${(1 - hop * .05).toFixed(3)})`;
+        if (scRing) scRing.style.transform = `rotate(${(p * 140).toFixed(1)}deg)`;
         const on = Math.round(p);
         if (on !== qsOn) {
           qsOn = on;
-          qsCards.forEach((c, k) => c.classList.toggle("on", k === on));
+          qsPin.dataset.scene = on;
+          qsTexts.forEach((c, k) => c.classList.toggle("on", k === on));
           if (qsN) qsN.textContent = "0" + (on + 1);
         }
         if (qsBar) qsBar.style.transform = `scaleX(${((p + 1) / n).toFixed(3)})`;

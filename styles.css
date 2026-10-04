@@ -1696,3 +1696,154 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 .lp.day .lp-btn { background: var(--lp-ink); color: #F2EFE6; box-shadow: 0 18px 40px -16px rgba(18, 34, 74, .6); }
 .lp.day .lp-btn:hover { box-shadow: 0 24px 50px -16px rgba(18, 34, 74, .7); }
 .lp.day .lp-android { border-color: rgba(18, 34, 74, .25); }
+
+/* ==========================================================================
+   DOT'S STORY
+   The dot from the logo is a small character. In "does this sound familiar"
+   the page holds still while he acts out each question: the colour washes out
+   from him, a giant word slides past, the loop keeps turning around him.
+   ========================================================================== */
+.lp-qs-pin { position: relative; --lp-ink: #12224A; --lp-muted: #33416B; --lp-line: rgba(18, 34, 74, .16); color: #12224A; background: var(--c0); }
+.sc-bg { display: none; position: absolute; inset: 0; }
+.sc-bg i { position: absolute; inset: 0; background: var(--c0); }
+.sc-bg i + i { clip-path: circle(0% at 50% 38%); will-change: clip-path; }
+.sc-words { display: none; }
+.sc-stage { position: relative; display: grid; place-items: center; padding: 26px 16px 0; z-index: 1; }
+.rig { width: min(84vw, 380px); height: auto; overflow: visible; }
+.rig text { font-family: var(--body); }
+.sc-copy { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 28px; padding: 14px 24px 34px; max-width: 640px; margin: 0 auto; }
+.sc-text { display: flex; flex-direction: column; gap: 8px; }
+.sc-text .lp-q-n { font-family: var(--display); font-weight: 800; font-size: 15px; color: #12224A; }
+.sc-text .lp-q-n i { font-style: normal; font-weight: 600; opacity: .6; }
+.sc-text .lp-q-text { font-size: clamp(23px, 6vw, 36px); line-height: 1.1; max-width: none; color: #12224A; text-wrap: balance; }
+.sc-text .lp-p { font-size: clamp(15px, 4vw, 18px); line-height: 1.45; max-width: 44ch; color: #33416B; }
+
+/* pinned: one screen, six scenes */
+.lp.pin .lp-qs-pin { padding: 68px 0 16px; gap: 0; }
+.lp.pin .sc-bg { display: block; }
+.lp.pin .sc-words { display: block; position: absolute; left: 0; top: clamp(62px, 10svh, 104px); width: 100%; pointer-events: none; }
+.lp.pin .sc-words > div { display: flex; align-items: center; width: max-content; will-change: transform; transform: translateX(-15vw); height: clamp(100px, 30vw, 290px); }
+.lp.pin .sc-words span { width: 130vw; flex: none; display: flex; justify-content: center; white-space: nowrap; font-family: var(--display); font-weight: 800; font-size: min(300px, 32vw, calc(150vw / var(--k, 6))); line-height: .9; letter-spacing: -0.045em; color: rgba(255, 255, 255, .5); }
+.lp.on-stage .lp-nav { background: none; }
+.lp.on-stage .lp-nav .wm { color: #12224A; }
+.lp.on-stage .lp-signin { background: rgba(255, 255, 255, .6); color: #12224A; border-color: transparent; }
+.lp.pin .sc-stage { flex: 1 1 0; min-height: 0; padding: 0; }
+.lp.pin .rig { position: absolute; left: 0; top: 0; width: 100%; height: 100%; will-change: transform; transform-origin: 50% 85%; }
+.lp.pin .sc-copy { display: grid; flex: none; width: 100%; padding: 0 24px; margin: 4px auto 14px; text-align: center; }
+.lp.pin .sc-text { grid-area: 1 / 1; align-items: center; opacity: 0; transform: translateY(18px); transition: opacity .3s ease, transform .5s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
+.lp.pin .sc-text.on { opacity: 1; transform: none; transition-delay: .14s; pointer-events: auto; }
+.lp.pin .lp-qs-nav { position: relative; z-index: 1; color: rgba(18, 34, 74, .6); }
+.lp.pin .lp-qs-nav b { color: #12224A; }
+.lp-qs-pin .lp-qs-bar { background: rgba(18, 34, 74, .16); }
+.lp-qs-pin .lp-qs-bar i { background: #12224A; }
+@media (min-width: 860px) {
+  .lp.pin .sc-stage { max-height: 440px; }
+  .lp.pin .lp-qs-pin { justify-content: center; }
+}
+
+/* the loop that keeps turning around him */
+.rig-ring, .rig-ring > g { transform-box: view-box; transform-origin: 160px 170px; }
+.rig-ring > g { animation: rig-spin 18s linear infinite; }
+@keyframes rig-spin { to { transform: rotate(360deg); } }
+
+/* props belong to a scene: they pop in when it is theirs */
+.pr { opacity: 0; transform: scale(.4); transform-box: fill-box; transform-origin: center; transition: opacity .25s ease, transform .55s cubic-bezier(.3, 1.55, .5, 1); }
+[data-scene="0"] .pr.s0, [data-scene="1"] .pr.s1, [data-scene="2"] .pr.s2, [data-scene="3"] .pr.s3, [data-scene="4"] .pr.s4, [data-scene="5"] .pr.s5 { opacity: 1; transform: none; transition-delay: .16s; }
+[data-scene] .pr.d1 { transition-delay: .3s; } [data-scene] .pr.d2 { transition-delay: .42s; }
+
+/* Dot himself */
+.rig-char { transform-box: view-box; transform-origin: 160px 268px; transition: transform .6s cubic-bezier(.3, 1.4, .5, 1); }
+.d-body { animation: d-bob 2.8s ease-in-out infinite alternate; }
+@keyframes d-bob { to { transform: translateY(-3px); } }
+.d-arm { transform-box: view-box; transition: transform .6s cubic-bezier(.3, 1.4, .5, 1); }
+.d-arm.l { transform-origin: 104px 190px; transform: rotate(var(--al, 0deg)); }
+.d-arm.r { transform-origin: 216px 190px; transform: rotate(var(--ar, 0deg)); }
+.d-pupil { transform: translate(var(--px, 0px), var(--py, 0px)); transition: transform .4s cubic-bezier(.3, 1.4, .5, 1); }
+.d-lid, .d-blink { transform-box: fill-box; transform-origin: top; }
+.d-lid { transform: scaleY(var(--lid, 0)); transition: transform .4s ease; }
+.d-blink { transform: scaleY(0); animation: d-blink 4.4s infinite; }
+@keyframes d-blink { 0%, 93%, 100% { transform: scaleY(0); } 96.5% { transform: scaleY(1.8); } }
+.d-mouth { opacity: 0; transition: opacity .2s ease; }
+[data-scene="0"] .m-flat, [data-scene="4"] .m-flat, [data-scene="5"] .m-flat, [data-scene="1"] .m-o, [data-scene="2"] .m-sad, [data-scene="3"] .m-wavy { opacity: 1; }
+.d-float { animation: d-float 3.2s ease-in-out infinite alternate; }
+.pr.s2 > g:nth-child(2) .d-float, .pr.s5 .d-float + .d-float { animation-delay: -1.4s; }
+@keyframes d-float { to { transform: translateY(-7px); } }
+
+/* 1. three hours: sleepy eyes on the phone while the clock races */
+[data-scene="0"] { --al: -62deg; --ar: 62deg; --py: 5px; --lid: .85; }
+.d-hand-m, .d-hand-h { transform-box: view-box; transform-origin: 258px 70px; }
+[data-scene="0"] .d-hand-m { animation: rig-spin 1.1s linear infinite; }
+[data-scene="0"] .d-hand-h { animation: rig-spin 9s linear infinite; }
+[data-scene="0"] .d-zz { animation: d-zz 2.6s ease-in-out infinite; } [data-scene="0"] .d-zz.z2 { animation-delay: .7s; }
+@keyframes d-zz { 0% { opacity: 0; transform: translateY(8px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateY(-14px); } }
+/* 2. focus: a book in his hands, and his eyes keep leaving it */
+[data-scene="1"] { --al: -58deg; --ar: 58deg; --py: 4px; }
+[data-scene="1"] .d-pupil { animation: d-dart 4.5s infinite; }
+@keyframes d-dart { 0%, 28% { transform: translate(-6px, -3px); } 33%, 61% { transform: translate(6px, -5px); } 66%, 94% { transform: translate(6px, 1px); } 100% { transform: translate(-6px, -3px); } }
+[data-scene="1"] .d-ping { animation: d-ping 4.5s infinite; animation-delay: calc(var(--i) * 1.5s - .1s); opacity: 0; }
+@keyframes d-ping { 0% { opacity: 0; transform: scale(.4); } 5%, 28% { opacity: 1; transform: scale(1); } 34%, 100% { opacity: 0; transform: scale(.8); } }
+/* 3. compare: everyone else's highlights tower over a small Dot */
+[data-scene="2"] { --al: -22deg; --ar: 22deg; --py: -6px; --lid: .3; }
+[data-scene="2"] .rig-char { transform: scale(.72); }
+/* 4. noise: it all pours in and nothing stays */
+[data-scene="3"] { --al: 150deg; --ar: -150deg; }
+[data-scene="3"] .d-pupil { animation: d-orbit .9s linear infinite; }
+@keyframes d-orbit { 0% { transform: translate(5px, 0); } 25% { transform: translate(0, 5px); } 50% { transform: translate(-5px, 0); } 75% { transform: translate(0, -5px); } 100% { transform: translate(5px, 0); } }
+.d-chip { transform-box: fill-box; transform-origin: center; opacity: 0; }
+[data-scene="3"] .d-chip { animation: d-rain 3.2s linear infinite; animation-delay: calc(var(--i) * -.53s); }
+@keyframes d-rain { 0% { transform: translateY(0); opacity: 0; } 12%, 62% { opacity: 1; } 100% { transform: translateY(128px) scale(.4); opacity: 0; } }
+/* 5. habit: the hand that goes for the phone by itself */
+[data-scene="4"] { --al: -18deg; --px: 6px; --py: 3px; }
+[data-scene="4"] .d-arm.r { animation: d-reach 1.3s ease-in-out infinite; }
+@keyframes d-reach { 0%, 100% { transform: rotate(-6deg); } 45%, 62% { transform: rotate(-56deg); } }
+[data-scene="4"] .d-buzz { animation: d-buzz 1.3s infinite; }
+@keyframes d-buzz { 0%, 40% { opacity: 0; } 50%, 100% { opacity: 1; } }
+/* 6. together: everyone at the table, everyone looking down */
+[data-scene="5"] { --al: -62deg; --ar: 62deg; --py: 6px; --lid: .45; }
+
+/* Dot, small */
+.dot-mini { display: block; width: 100%; height: auto; overflow: visible; }
+.dm-body, .dm-p { fill: #12224A; }
+.lp:not(.day) .dm-body { fill: #B9C7F5; }
+.dm-smile { stroke: #F2EFE6; opacity: 0; transition: opacity .3s ease; }
+.lp:not(.day) .dm-smile { stroke: #12224A; }
+.dot-mini.happy .dm-smile { opacity: 1; }
+.dm-p { transition: transform .35s cubic-bezier(.3, 1.4, .5, 1); }
+
+/* how it works: the phone turns in space, and Dot watches over the top of it */
+.hp-body { border-radius: 0; padding: 0; background: none; box-shadow: none; z-index: 1; }
+.lp.day .hp-body { box-shadow: none; }
+.hp-tilt { height: 100%; border-radius: 42px; padding: 10px; background: #0B1736; box-shadow: 0 0 0 1px var(--lp-line), 0 50px 100px -40px rgba(185, 199, 245, .45);
+  transform: perspective(1100px) rotateY(var(--ry, 0deg)) rotateX(var(--rx, 0deg)) scale(var(--sc, 1)); transition: transform .9s cubic-bezier(.3, 1.25, .4, 1); }
+.lp.day .hp-tilt { box-shadow: 0 0 0 1px rgba(18, 34, 74, .2), 0 50px 90px -40px rgba(18, 34, 74, .7); }
+.lp-how[data-phase="0"] .hp-tilt { --ry: -16deg; --rx: 6deg; }
+.lp-how[data-phase="1"] .hp-tilt { --ry: -8deg; --rx: 3deg; --sc: .97; }
+.lp-how[data-phase="2"] .hp-tilt { --ry: 15deg; --rx: 4deg; }
+.lp-how[data-phase="3"] .hp-tilt { animation: hp-shake .45s ease .4s 2; }
+.lp-how[data-phase="4"] .hp-tilt, .lp-how[data-phase="5"] .hp-tilt { --ry: -10deg; --rx: 3deg; }
+.lp-how[data-phase="6"] .hp-tilt { --rx: -5deg; --sc: 1.04; }
+@keyframes hp-shake { 25% { transform: perspective(1100px) rotateZ(-2.2deg); } 75% { transform: perspective(1100px) rotateZ(2.2deg); } }
+.lp-how.static .hp-tilt { transform: none; }
+.hp-peek { position: absolute; left: 50%; top: 0; width: 36%; z-index: 0; transform: translate(-50%, -50%); transition: transform .55s cubic-bezier(.3, 1.6, .5, 1); }
+.hp-peek .dm-p { transform: translateY(5px); }
+.lp-how[data-phase="2"] .hp-peek .dm-p { transform: translate(4px, 5px); }
+.lp-how[data-phase="3"] .hp-peek { transform: translate(-50%, -64%); }
+.lp-how[data-phase="3"] .hp-peek .dm-p { transform: translateY(0); }
+.lp-how[data-phase="6"] .hp-peek { transform: translate(-50%, -82%); }
+.lp-how[data-phase="6"] .hp-peek .dm-p { transform: translateY(-2px); }
+.lp-how[data-phase="6"] .hp-peek .dm-smile { opacity: 1; }
+.lp-how-phone { margin-top: 40px; }
+
+/* the last word: Dot sits behind the button */
+.lp-cta-dot { width: 78px; margin-bottom: -44px; animation: d-float 2.2s ease-in-out infinite alternate; }
+.lp-cta .lp-btn { z-index: 1; }
+
+/* the numbers get a colour each */
+.lp.day .lp-fact { border-color: transparent; }
+.lp.day .lp-fact:nth-child(1) { --lp-bg-2: #FBEBB5; }
+.lp.day .lp-fact:nth-child(2) { --lp-bg-2: #DCE4FB; }
+.lp.day .lp-fact:nth-child(3) { --lp-bg-2: #CFEFE4; }
+.lp.day .lp-fact:nth-child(4) { --lp-bg-2: #FAD7E2; }
+
+@media (prefers-reduced-motion: reduce) { .rig *, .dot-mini, .lp-cta-dot, .hp-tilt { animation: none !important; } .d-chip { opacity: 1; } }
+:root[data-motion="off"] .d-chip { opacity: 1; }
