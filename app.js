@@ -1778,17 +1778,10 @@ function viewLanding() {
           <p class="lp-kicker">The average person will give</p>
           <h1 class="lp-hero-num"><b data-hero-count>0</b> <span>years</span></h1>
           <p class="lp-h-line">${words("of their life to scrolling.")}</p>
-          <p class="lp-late">Nobody ever chose that.</p>
           <small class="lp-hero-src">About 141 minutes a day over 50 years (Statista, 2025)</small>
         </div>
-        <p class="lp-hero-beat"><span>It never feels like years.</span><b>It feels like one more video.</b></p>
         <div class="lp-scroll-cue" aria-hidden="true"><span></span>Scroll</div>
       </section>
-    </div>
-
-    <div class="lp-bands" aria-hidden="true">
-      ${band("a", ["one more video", "just five minutes", "last one, I promise", "okay, one more", "wait, what time is it?"])}
-      ${band("b", ["what was I looking for?", "why am I still here?", "it's 2 AM", "where did the evening go?", "I only came for one thing"])}
     </div>
 
     <section class="lp-qs" id="lp-qs" style="--n:${n}">
@@ -1809,7 +1802,10 @@ function viewLanding() {
               <p class="lp-p">${esc(q.body)}</p>
             </article>`).join("")}
           </div>
-          <div class="lp-qs-nav" aria-hidden="true"><b data-qs-n>01</b><div class="lp-qs-bar"><i></i></div><span>0${n}</span></div>
+          <div class="sc-foot">
+            <div class="lp-qs-nav" aria-hidden="true"><b data-qs-n>01</b><div class="lp-qs-bar"><i></i></div><span>0${n}</span></div>
+            <button type="button" class="sc-next"><span class="nx-a">Next</span><span class="nx-b">Continue</span>${ICONS.arrow}</button>
+          </div>
         </div>
       </div>
     </section>
@@ -1817,8 +1813,7 @@ function viewLanding() {
     <section class="lp-sec lp-research" id="lp-research">
       <div class="lp-research-head reveal">
         <p class="lp-kicker">If that felt familiar</p>
-        <h2 class="lp-h2 split">${splitWords("You're not imagining it.")}</h2>
-        <p class="lp-p">It isn't a lack of willpower. These apps are built to keep you scrolling, and the research shows it everywhere.</p>
+        <h2 class="lp-h2 split">${splitWords("You are at the right place.")}</h2>
       </div>
       <div class="lp-facts">
         <article class="lp-fact reveal from-l">
@@ -1831,7 +1826,7 @@ function viewLanding() {
         </article>
         <article class="lp-fact reveal from-l">
           <div class="fx fx-checks" aria-hidden="true">${Array.from({ length: 205 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div>
-          <b data-count="205" data-suffix="×">0×</b><p>a day, that's how often the average American checks their phone. About <strong>every 5 minutes</strong> you're awake.</p><small>Reviews.org, 2024</small>
+          <b data-count="205" data-suffix="×">0×</b><p>a day, that's how often the average American checks their phone.</p><small>Reviews.org, 2024</small>
         </article>
         <article class="lp-fact reveal from-r">
           <div class="fx fx-pairs" aria-hidden="true">${Array.from({ length: 10 }, (_, k) => `<i class="${k < 7 ? "hit" : ""}" style="--i:${k}"></i>`).join("")}</div>
@@ -1841,21 +1836,18 @@ function viewLanding() {
     </section>
 
     <section class="lp-sec lp-turn">
-      <h2 class="lp-h2 lp-turn-h reveal"><span class="lp-soft">You don't have to <span class="lp-strike">delete</span> your social media.</span><br>You just have to <span class="lp-under">own it<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 13c38-9 82-11 120-6 26 3 48 5 72 0" pathLength="100"/></svg></span>.</h2>
-      <p class="lp-p lp-scrub" data-scrub>${scrub("In a University of Pennsylvania study, people who kept using social media but limited it to about")} ${scrub("30 minutes a day", "st")} ${scrub("felt significantly less lonely and depressed within three weeks. Not quitting. Just using it on purpose.")}</p>
-      <p class="lp-source reveal">Hunt et al., Journal of Social and Clinical Psychology, 2018</p>
+      <h2 class="lp-h2 lp-turn-h reveal"><span class="lp-soft">The solution is not to <span class="lp-strike">delete</span> your social media.</span><br>You just have to <span class="lp-under">own it<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 13c38-9 82-11 120-6 26 3 48 5 72 0" pathLength="100"/></svg></span>.</h2>
     </section>
 
     <section class="lp-meet" id="lp-meet">
       <div class="lp-meet-stage">
+        <h2 class="lp-h1 lp-stage-a split in-when-stage">${splitWords("End the infinite scroll with")}</h2>
         <div class="lp-meet-visual">
           <div class="lp-lottie" id="lp-lottie" aria-hidden="true">${ART.loop(false)}</div>
         </div>
         <div class="lp-meet-copy">
-          <h2 class="lp-h1 lp-stage-a split in-when-stage">${splitWords("End the infinite scroll.")}</h2>
           <div class="lp-stage-b">
-            <p class="lp-meet-name">Meet <span>OwnIt</span>.</p>
-            <p class="lp-p">A door to social media that you walk through on purpose.</p>
+            <p class="lp-p">The app that adds ownership, intention and purpose to your social media use.</p>
           </div>
         </div>
       </div>
@@ -1864,7 +1856,7 @@ function viewLanding() {
 
     <section class="lp-sec lp-cta">
       <canvas id="lp-sparks" aria-hidden="true"></canvas>
-      <h2 class="lp-h1 lp-cta-h"><span class="lp-soft reveal from-l">Own your social media.</span><span class="reveal from-r" style="--d:1">Own your life.</span></h2>
+      <h2 class="lp-h1 lp-cta-h"><span class="lp-cta-lead reveal zoom">Stop living in autopilot.</span><span class="lp-soft reveal from-l">Own your social media.</span><span class="reveal from-r" style="--d:1">Own your life.</span></h2>
       <p class="lp-p reveal" style="--d:2">Free. Takes a minute to set up.</p>
       <div class="lp-cta-row reveal zoom" style="--d:3">
         <span class="lp-cta-dot" aria-hidden="true">${dotMini("happy")}</span>
@@ -1924,6 +1916,16 @@ function initLanding() {
   const scWords = root.querySelector(".sc-words > div"), scBg = [...root.querySelectorAll(".sc-bg i")], scRig = root.querySelector(".sc-stage .rig"), scRing = root.querySelector(".rig-ring");
   const scrubEl = root.querySelector("[data-scrub]"), scrubWords = scrubEl ? [...scrubEl.querySelectorAll(".sc")] : [];
   let lit = -1, qsOn = -1, qsAt = -1;
+  const scNext = root.querySelector(".sc-next");
+  if (scNext && qsScroll) {
+    const goNext = () => {
+      const r = qsScroll.getBoundingClientRect(), n = qsTexts.length, top = r.top + (window.scrollY || 0);
+      const cur = Math.max(0, qsOn), step = (r.height - innerHeight) / (n - 1);
+      window.scrollTo({ top: (cur >= n - 1 ? top + r.height : top + (cur + 1) * step) + 1, behavior: "smooth" });
+    };
+    scNext.addEventListener("click", goNext);
+    ctl.cleanups.push(() => scNext.removeEventListener("click", goNext));
+  }
   const howPhone = root.querySelector(".lp-how-phone");
   const measure = () => {
     if (howPhone?.clientHeight) root.style.setProperty("--hs", (howPhone.clientHeight / 540).toFixed(4));
@@ -1964,6 +1966,7 @@ function initLanding() {
         if (on !== qsOn) {
           qsOn = on;
           qsPin.dataset.scene = on;
+          if (scNext) scNext.classList.toggle("last", on === n - 1);
           qsTexts.forEach((c, k) => c.classList.toggle("on", k === on));
           if (qsN) qsN.textContent = "0" + (on + 1);
         }
