@@ -1915,3 +1915,12 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 
 /* the last word: two strong lines */
 .lp-cta-h span:not(.lp-cta-lead) { white-space: nowrap; font-size: clamp(27px, 8vw, 80px); }
+
+
+/* ==========================================================================
+   Two screens: the solution on one, "you just have to own it" on the next
+   ========================================================================== */
+.lp-solution { min-height: 100vh; min-height: 100svh; display: grid; place-items: center; padding: 90px 22px 60px; }
+.lp-sol-h { font-family: var(--display); font-weight: 800; font-size: clamp(40px, 10.6vw, 96px); line-height: 1.04; letter-spacing: -0.03em; color: var(--lp-ink); text-align: center; max-width: 13ch; }
+.lp-meet-stage { min-height: 100vh; min-height: 100svh; justify-content: center; padding-top: 90px; }
+.lp-meet-stage .lp-own { display: block; white-space: nowrap; font-family: var(--display); font-weight: 800; font-size: clamp(27px, 7.7vw, 78px); line-height: 1.1; letter-spacing: -0.025em; color: var(--lp-ink); text-align: center; margin-bottom: clamp(10px, 3vw, 26px); }

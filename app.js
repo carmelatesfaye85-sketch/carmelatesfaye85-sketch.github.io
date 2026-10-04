@@ -1809,9 +1809,13 @@ function viewLanding() {
       </div>
     </section>
 
+    <section class="lp-solution">
+      <h2 class="lp-sol-h lp-turn-h reveal">The solution is not to <span class="lp-strike">delete</span> your social media.</h2>
+    </section>
+
     <section class="lp-meet" id="lp-meet">
       <div class="lp-meet-stage">
-        <h2 class="lp-turn-h reveal" aria-label="The solution is not to delete your social media. You just have to own it."><span class="lp-turn-small">The solution is not to <span class="lp-strike">delete</span> your social media.</span><span class="lp-turn-big">You just have to</span></h2>
+        <h2 class="lp-own lp-turn-h reveal">You just have to <span class="lp-under">own it<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 13c38-9 82-11 120-6 26 3 48 5 72 0" pathLength="100"/></svg></span>.</h2>
         <div class="lp-meet-visual">
           <div class="lp-lottie" id="lp-lottie" aria-hidden="true">${ART.loop(false)}</div>
         </div>
