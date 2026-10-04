@@ -1726,7 +1726,7 @@ function lpHow() {
     <p class="lp-kicker lp-how-kicker reveal">How it works</p>
     <div class="lp-how-copy">
       <ol class="lp-how-steps">
-        ${LP_HOW.map(([h, t], i) => `<li data-how="${i}" class="${i ? "" : "on"}" style="--dur:${[2.9, 3.5, 6.2][i]}s"><button type="button" class="lp-how-tab"><span class="lp-step-n">0${i + 1}</span><h3>${h}</h3></button><p>${t}</p><i class="lp-how-bar"></i></li>`).join("")}
+        ${LP_HOW.map(([h], i) => `<li data-how="${i}" class="${i ? "" : "on"}" style="--dur:${[2.9, 3.5, 6.2][i]}s"><button type="button" class="lp-how-tab"><span class="lp-step-n">0${i + 1}</span><h3>${h}</h3></button><i class="lp-how-bar"></i></li>`).join("")}
       </ol>
     </div>
     <div class="lp-how-phone reveal zoom" aria-hidden="true"><div class="hp-peek">${dotMini()}</div><div class="hp-body"><div class="hp-tilt">
@@ -1784,7 +1784,7 @@ function viewLanding() {
       </section>
     </div>
 
-    <section class="lp-qs" id="lp-qs" style="--n:${n}">
+    <section class="lp-qs tap" id="lp-qs" style="--n:${n}">
       <div class="lp-qs-head reveal">
         <p class="lp-kicker">Be honest with yourself</p>
         <h2 class="lp-h2 split">${splitWords("Does any of this sound familiar?")}</h2>
@@ -1799,7 +1799,6 @@ function viewLanding() {
             <article class="sc-text ${i ? "" : "on"}">
               <span class="lp-q-n">0${i + 1} <i>/ 0${n}</i></span>
               <h3 class="lp-q-text">${esc(q.title)}</h3>
-              <p class="lp-p">${esc(q.body)}</p>
             </article>`).join("")}
           </div>
           <div class="sc-foot">
@@ -1810,38 +1809,9 @@ function viewLanding() {
       </div>
     </section>
 
-    <section class="lp-sec lp-research" id="lp-research">
-      <div class="lp-research-head reveal">
-        <p class="lp-kicker">If that felt familiar</p>
-        <h2 class="lp-h2 split">${splitWords("You are at the right place.")}</h2>
-      </div>
-      <div class="lp-facts">
-        <article class="lp-fact reveal from-l">
-          <div class="fx fx-day" aria-hidden="true">${Array.from({ length: 24 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div>
-          <b data-count="141" data-fmt="hm">0m</b><p>a day on social media, for the average person online. That's about <strong>36 days a year</strong>.</p><small>Statista, February 2025</small>
-        </article>
-        <article class="lp-fact reveal from-r">
-          <div class="fx fx-focus" aria-hidden="true"><div><span>2004</span><i class="then"></i></div><div><span>Now</span><i class="now"></i></div></div>
-          <b data-count="47" data-suffix=" sec">0 sec</b><p>is how long people now focus on one screen before switching, down from <strong>2½ minutes</strong> in 2004.</p><small>Gloria Mark, University of California, Irvine</small>
-        </article>
-        <article class="lp-fact reveal from-l">
-          <div class="fx fx-checks" aria-hidden="true">${Array.from({ length: 205 }, (_, k) => `<i style="--i:${k}"></i>`).join("")}</div>
-          <b data-count="205" data-suffix="×">0×</b><p>a day, that's how often the average American checks their phone.</p><small>Reviews.org, 2024</small>
-        </article>
-        <article class="lp-fact reveal from-r">
-          <div class="fx fx-pairs" aria-hidden="true">${Array.from({ length: 10 }, (_, k) => `<i class="${k < 7 ? "hit" : ""}" style="--i:${k}"></i>`).join("")}</div>
-          <b data-count="70" data-suffix="%">0%</b><p>of people in relationships say phones get in the way of time with their partner.</p><small>Roberts & David, Baylor University</small>
-        </article>
-      </div>
-    </section>
-
-    <section class="lp-sec lp-turn">
-      <h2 class="lp-h2 lp-turn-h reveal"><span class="lp-soft">The solution is not to <span class="lp-strike">delete</span> your social media.</span><br>You just have to <span class="lp-under">own it<svg viewBox="0 0 200 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 13c38-9 82-11 120-6 26 3 48 5 72 0" pathLength="100"/></svg></span>.</h2>
-    </section>
-
     <section class="lp-meet" id="lp-meet">
       <div class="lp-meet-stage">
-        <h2 class="lp-h1 lp-stage-a split in-when-stage">${splitWords("End the infinite scroll with")}</h2>
+        <h2 class="lp-turn-h reveal" aria-label="The solution is not to delete your social media. You just have to own it."><span class="lp-turn-small">The solution is not to <span class="lp-strike">delete</span> your social media.</span><span class="lp-turn-big">You just have to</span></h2>
         <div class="lp-meet-visual">
           <div class="lp-lottie" id="lp-lottie" aria-hidden="true">${ART.loop(false)}</div>
         </div>
@@ -1856,7 +1826,7 @@ function viewLanding() {
 
     <section class="lp-sec lp-cta">
       <canvas id="lp-sparks" aria-hidden="true"></canvas>
-      <h2 class="lp-h1 lp-cta-h"><span class="lp-cta-lead reveal zoom">Stop living in autopilot.</span><span class="lp-soft reveal from-l">Own your social media.</span><span class="reveal from-r" style="--d:1">Own your life.</span></h2>
+      <h2 class="lp-h1 lp-cta-h"><span class="lp-cta-lead reveal zoom">End the infinite scroll.</span><span class="reveal from-l">Own your social media.</span><span class="reveal from-r" style="--d:1">Own your life.</span></h2>
       <p class="lp-p reveal" style="--d:2">Free. Takes a minute to set up.</p>
       <div class="lp-cta-row reveal zoom" style="--d:3">
         <span class="lp-cta-dot" aria-hidden="true">${dotMini("happy")}</span>
@@ -1916,15 +1886,53 @@ function initLanding() {
   const scWords = root.querySelector(".sc-words > div"), scBg = [...root.querySelectorAll(".sc-bg i")], scRig = root.querySelector(".sc-stage .rig"), scRing = root.querySelector(".rig-ring");
   const scrubEl = root.querySelector("[data-scrub]"), scrubWords = scrubEl ? [...scrubEl.querySelectorAll(".sc")] : [];
   let lit = -1, qsOn = -1, qsAt = -1;
+  // The questions: Dot acts out each one, and only the Next button moves to the following one.
+  // The colour washes out from him, the big word slides past, and he hops into the next scene.
   const scNext = root.querySelector(".sc-next");
-  if (scNext && qsScroll) {
+  let scene = 0, sceneBusy = false;
+  const drawScene = (p) => {
+    const n = qsTexts.length, i = Math.max(0, Math.min(n - 1, Math.floor(p))), e = clamp01(p - i), hop = Math.sin(e * Math.PI);
+    if (i !== qsAt && scBg.length > 1) {
+      qsAt = i;
+      scBg[0].style.background = LP_SCENES[i][1];
+      scBg[1].style.background = LP_SCENES[Math.min(n - 1, i + 1)][1];
+    }
+    if (scBg[1]) scBg[1].style.clipPath = `circle(${(e * 150).toFixed(1)}% at 50% 38%)`;
+    if (scWords) scWords.style.transform = `translate3d(${(-15 - p * 130).toFixed(2)}vw,0,0)`;
+    if (scRig) scRig.style.transform = `translateY(${(-hop * 38).toFixed(1)}px) rotate(${(Math.sin(e * Math.PI * 2) * 6).toFixed(2)}deg) scale(${(1 + hop * .05).toFixed(3)}, ${(1 - hop * .05).toFixed(3)})`;
+    if (scRing) scRing.style.transform = `rotate(${(p * 140).toFixed(1)}deg)`;
+    const on = Math.round(p);
+    if (on !== qsOn) {
+      qsOn = on;
+      qsPin.dataset.scene = on;
+      if (scNext) scNext.classList.toggle("last", on === n - 1);
+      qsTexts.forEach((c, k) => { c.classList.toggle("on", k === on); c.setAttribute("aria-hidden", k === on ? "false" : "true"); });
+      if (qsN) qsN.textContent = "0" + (on + 1);
+    }
+    if (qsBar) qsBar.style.transform = `scaleX(${((p + 1) / n).toFixed(3)})`;
+  };
+  if (scNext && qsPin && qsTexts.length) {
     const goNext = () => {
-      const r = qsScroll.getBoundingClientRect(), n = qsTexts.length, top = r.top + (window.scrollY || 0);
-      const cur = Math.max(0, qsOn), step = (r.height - innerHeight) / (n - 1);
-      window.scrollTo({ top: (cur >= n - 1 ? top + r.height : top + (cur + 1) * step) + 1, behavior: "smooth" });
+      if (sceneBusy) return;
+      if (scene >= qsTexts.length - 1) {   // after the last one: carry on down the page
+        window.scrollTo({ top: qsPin.getBoundingClientRect().bottom + (window.scrollY || 0) + 1, behavior: reduce ? "auto" : "smooth" });
+        return;
+      }
+      const from = scene; scene += 1;
+      if (reduce) return drawScene(scene);
+      sceneBusy = true;
+      const t0 = performance.now();
+      const step = (t) => {
+        if (!ctl.alive) return;
+        const k = clamp01((t - t0) / 950);
+        drawScene(k < 1 ? from + ease(k) : scene);
+        if (k < 1) requestAnimationFrame(step); else sceneBusy = false;
+      };
+      requestAnimationFrame(step);
     };
     scNext.addEventListener("click", goNext);
     ctl.cleanups.push(() => scNext.removeEventListener("click", goNext));
+    drawScene(0);
   }
   const howPhone = root.querySelector(".lp-how-phone");
   const measure = () => {
@@ -1943,36 +1951,8 @@ function initLanding() {
       const r = bands.getBoundingClientRect();
       if (r.bottom > -200 && r.top < vh + 200) root.style.setProperty("--bx", ((r.top - vh / 2) * .55).toFixed(1) + "px");
     }
-    // 3. the questions: the page holds still while Dot acts out each one. The colour washes out from him,
-    //    the big word slides past, and he hops into the next scene.
-    if (pin && qsScroll && qsTexts.length) {
-      const r = qsScroll.getBoundingClientRect(), n = qsTexts.length;
-      root.classList.toggle("on-stage", r.top <= 56 && r.bottom >= 56);   // the top bar sits on the coloured scene
-      if (r.bottom > -vh && r.top < vh * 2) {
-        const f = clamp01(-r.top / Math.max(1, r.height - vh)) * (n - 1);
-        const i = Math.min(n - 1, Math.floor(f));
-        const e = i >= n - 1 ? 0 : ease(clamp01((f - i - .22) / .56));   // rest on a scene, then move to the next
-        const p = i + e, hop = Math.sin(e * Math.PI);
-        if (i !== qsAt) {
-          qsAt = i;
-          scBg[0].style.background = LP_SCENES[i][1];
-          scBg[1].style.background = LP_SCENES[Math.min(n - 1, i + 1)][1];
-        }
-        scBg[1].style.clipPath = `circle(${(e * 150).toFixed(1)}% at 50% 38%)`;
-        if (scWords) scWords.style.transform = `translate3d(${(-15 - p * 130).toFixed(2)}vw,0,0)`;
-        if (scRig) scRig.style.transform = `translateY(${(-hop * 38).toFixed(1)}px) rotate(${(Math.sin(e * Math.PI * 2) * 6).toFixed(2)}deg) scale(${(1 + hop * .05).toFixed(3)}, ${(1 - hop * .05).toFixed(3)})`;
-        if (scRing) scRing.style.transform = `rotate(${(p * 140).toFixed(1)}deg)`;
-        const on = Math.round(p);
-        if (on !== qsOn) {
-          qsOn = on;
-          qsPin.dataset.scene = on;
-          if (scNext) scNext.classList.toggle("last", on === n - 1);
-          qsTexts.forEach((c, k) => c.classList.toggle("on", k === on));
-          if (qsN) qsN.textContent = "0" + (on + 1);
-        }
-        if (qsBar) qsBar.style.transform = `scaleX(${((p + 1) / n).toFixed(3)})`;
-      }
-    }
+    // 3. the top bar changes colour while it sits on the coloured question scene
+    if (qsPin) { const r = qsPin.getBoundingClientRect(); root.classList.toggle("on-stage", r.top <= 56 && r.bottom >= 56); }
     // 4. the study: the words light up as you read down
     if (scrubWords.length && !reduce) {
       const r = scrubEl.getBoundingClientRect();
