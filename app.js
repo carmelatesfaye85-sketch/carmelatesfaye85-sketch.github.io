@@ -105,6 +105,11 @@ const ICONS = {
   google: '<svg class="google-g" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>',
 };
 
+Object.assign(ICONS, {
+  arrowR: '<svg class="ic-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  checkc: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16 9.5"/></svg>',
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -174,6 +179,8 @@ function applyLook() {
   for (const k of ["muted", "ink-2"]) { if (strong) el.style.setProperty("--" + k, strong[k]); else el.style.removeProperty("--" + k); }
   if (strong) el.style.setProperty("--line", strong.line);
   el.dataset.contrast = L.contrast ? "more" : "normal";
+  el.dataset.colour = COLOURS[L.colour] ? L.colour : "navy";
+  el.dataset.mode = dark ? "dark" : "light";
   const f = FONTS[L.font] || FONTS.ownit;
   loadFont(L.font);
   if (L.font === "ownit") { el.style.removeProperty("--display"); el.style.removeProperty("--body"); }
@@ -572,6 +579,7 @@ function viewAuth() {
   return `
     <div class="auth">
       <section class="auth-brand">
+        ${markArt()}
         <span class="logo">${WORDMARK}</span>
         <div style="display:flex;flex-direction:column;gap:18px;position:relative;z-index:1">
           <h1 class="auth-headline">Use social media. <em>Don't let it use you.</em></h1>
@@ -710,7 +718,7 @@ function viewReality() {
         ${realityInsights(p).map(([icon, title, text]) => `
           <div class="card insight"><span class="insight-icon">${icon}</span><div><h3 style="margin-bottom:4px">${esc(title)}</h3><p>${esc(text)}</p></div></div>`).join("")}
       </div>
-      <button class="btn btn-primary btn-block" data-action="finish-reality" style="min-height:56px;font-size:17px">Start using OwnIt</button>
+      <button class="btn btn-primary btn-block" data-action="finish-reality" style="min-height:56px;font-size:17px">Start using OwnIt${ICONS.arrowR}</button>
     </div>`;
 }
 
@@ -905,7 +913,7 @@ function viewApp() {
   page += viewMomentFull();
 
   const current = mode ? "home" : TABS.includes(S.tab) ? S.tab : "menu";
-  const tabs = navItems().map(([id, label, icon]) => `<button data-action="tab" data-tab="${id}" ${current === id ? 'aria-current="page"' : ""}>${icon}${label}</button>`).join("");
+  const tabs = navItems().map(([id, label, icon]) => `<button data-action="tab" data-tab="${id}" ${current === id ? 'aria-current="page"' : ""}><span class="tab-ic">${icon}</span>${label}</button>`).join("");
   const side = Object.entries(PAGES).map(([id, [label, , icon]]) => `<button data-action="tab" data-tab="${id}" ${!mode && S.tab === id ? 'aria-current="page"' : ""}>${icon}${label}</button>`).join("");
   return `
     <div class="shell">
@@ -920,7 +928,7 @@ function viewApp() {
       <div class="main">
         <header class="topbar">
           <span class="logo">${WORDMARK}</span>
-          <button class="icon-btn" data-action="tab" data-tab="menu" aria-label="Menu">${ICONS.menu}</button>
+          <button class="avatar me-btn" data-action="tab" data-tab="account" aria-label="Your account">${esc(initials(displayName(), S.user?.email))}</button>
         </header>
         <main class="content">${page}</main>
       </div>
@@ -933,11 +941,6 @@ function todayMinutes() {
   return Math.round(S.visits.filter((v) => ms(v.started_at) >= start).reduce((a, v) => a + visitMinutes(v), 0));
 }
 
-function ringSvg(frac, r = 44) {
-  const c = 2 * Math.PI * r;
-  const off = c * (1 - Math.min(1, Math.max(0, frac)));
-  return `<svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="${r}"/><circle class="bar" cx="50" cy="50" r="${r}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}"/></svg>`;
-}
 
 function budgetLine() {
   const goal = S.profile?.daily_goal_minutes || 45;
@@ -969,6 +972,31 @@ function viewMoment() {
     <button class="moment-x" data-action="moment-close" aria-label="Close">×</button>
   </div>`;
 }
+/** A calm ring gauge: a soft track, the part that counts, and the dot from the mark at the end of it. */
+function gauge(frac, big, small, label) {
+  const f = Math.min(1, Math.max(0, frac)), r = 42, c = 2 * Math.PI * r;
+  const a = -Math.PI / 2 + f * Math.PI * 2;
+  return `<div class="gauge" role="img" aria-label="${esc(label)}">
+    <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="g-track" cx="50" cy="50" r="${r}"/><circle class="g-bar" cx="50" cy="50" r="${r}" stroke-dasharray="${(c * f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 50 50)"/><circle class="g-dot" cx="${(50 + r * Math.cos(a)).toFixed(1)}" cy="${(50 + r * Math.sin(a)).toFixed(1)}" r="6"/></svg>
+    <div class="g-in"><b>${big}</b><small>${small}</small></div>
+  </div>`;
+}
+/** The mark, used as a quiet drawing in the corner of a card. */
+function markArt() {
+  return `<svg class="mark-art" viewBox="208 290 444 444" fill="none" aria-hidden="true"><path d="${RING.arc}" stroke-width="64" stroke-linecap="round"/><circle cx="${RING.dot[0]}" cy="${RING.dot[1]}" r="44"/></svg>`;
+}
+function fmtTime(iso) { const d = new Date(iso); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
+/** One visit on a timeline: when, how it went, what it was. */
+function timeRow(v, when) {
+  const title = v.kind === "free" ? `Free scroll on ${PLATFORMS[v.platform]?.name || v.platform}` : v.intent;
+  const status = v.outcome ? OUTCOME_WORD[v.outcome] : "In progress";
+  const mark = { found: ICONS.check, partly: "~", distracted: "×" }[v.outcome] || "";
+  return `<li class="tl-row">
+    <time>${esc(when)}</time>
+    <span class="tl-node n-${v.outcome || "open"}" role="img" aria-label="${esc(status)}">${mark}</span>
+    <div class="tl-tx"><b>${esc(title)}</b><small>${esc(PLATFORMS[v.platform]?.name || "")} · ${Math.max(1, Math.round(visitMinutes(v)))} min · ${esc(status)}</small></div>
+  </li>`;
+}
 function viewHome() {
   const pf = PLATFORMS[S.platform] || PLATFORMS.tiktok;
   const recent = [];
@@ -983,20 +1011,53 @@ function viewHome() {
       <b>You opened ${esc(PLATFORMS[S.blocked].name)} directly.</b>
       <span>Say what you're looking for first. OwnIt will take you straight to it.</span>
     </div>` : "";
+  const goal = S.profile?.daily_goal_minutes || 45;
+  const used = todayMinutes();
+  const left = Math.max(0, goal - used);
+  const dayStart = startOfDay().getTime();
+  const today = S.visits.filter((v) => ms(v.started_at) >= dayStart);
+  const found = today.filter((v) => v.outcome === "found").length;
+  const pulled = today.filter((v) => v.outcome === "distracted").length;
+  const head = used >= goal ? "That's enough for today" : today.length ? "You're on track" : "Your day is yours";
+  const sub = used >= goal ? `You've used your ${goal} minutes. Tomorrow starts fresh.`
+    : today.length ? `${left} of your ${goal} minutes are still yours today.`
+    : `You have ${goal} minutes to spend on purpose.`;
   return `<div class="home">
     ${blocked}
     ${viewMoment()}
-    <div class="home-loop">${loopLive()}<p class="hello">${greeting()}, ${esc(displayName())}</p></div>
-    <form class="go" data-submit="go" novalidate>
-      <h1 id="go-q"><span>What are you</span> looking for?</h1>
+    <header class="hi">
+      <p class="hello">${greeting()}, ${esc(displayName())}</p>
+      <h1 class="hi-title">${head}<i class="sun" aria-hidden="true"></i></h1>
+      <p class="hi-sub">${sub}</p>
+    </header>
+    <form class="go feature" data-submit="go" novalidate>
+      ${markArt()}
+      <p class="kicker">Search on purpose</p>
+      <h2 id="go-q">What are you looking for?</h2>
       <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="easy injera recipe" aria-labelledby="go-q"></label>
       ${S.intentError ? '<p class="field-error">Type what you\'re looking for first.</p>' : ""}
       ${recent.length ? `<div class="recent" aria-label="Recent searches">${recent.map((v) => `<button type="button" class="chip chip-soft" data-action="reuse" data-q="${esc(v.intent)}">${esc(v.intent)}</button>`).join("")}</div>` : ""}
       <div class="pick"><span>On</span>${appPicker()}</div>
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="Time you need">${SEARCH_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.minutes}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
-      <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${pf.name}<span class="go-dot" aria-hidden="true"></span></a>
+      <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${pf.name}${ICONS.arrowR}</a>
     </form>
-    ${budgetLine()}
+    <section class="pane balance" aria-label="Today's budget">
+      <div class="balance-top">
+        ${gauge(left / goal, left, "min left", `${left} of ${goal} minutes left today`)}
+        <div class="balance-tx"><p class="kicker">Daily budget</p><b>${used} of ${goal} min used</b><small>Every visit you start here counts toward it.</small></div>
+      </div>
+      <ul class="stats">
+        <li>${ICONS.arrow}<b>${today.length}</b><span>${today.length === 1 ? "visit" : "visits"}</span></li>
+        <li>${ICONS.checkc}<b>${found}</b><span>found it</span></li>
+        <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+      </ul>
+    </section>
+    <section class="pane">
+      <div class="pane-head"><h2>Today</h2>${today.length ? `<button class="see-all" data-action="tab" data-tab="insights">See all</button>` : ""}</div>
+      ${today.length
+        ? `<ul class="tl">${today.slice(0, 4).map((v) => timeRow(v, fmtTime(v.started_at))).join("")}</ul>`
+        : `<p class="tl-empty">Nothing yet. Your first visit will show up here.</p>`}
+    </section>
   </div>`;
 }
 
@@ -1005,20 +1066,27 @@ function viewScroll() {
   const pf = PLATFORMS[S.platform] || PLATFORMS.tiktok;
   return `
     ${pageHead("Scroll on purpose", "No search this time. Pick how long, and OwnIt pulls you out when it's over.")}
-    <section class="plain-form">
+    <section class="plain-form feature">
+      ${markArt()}
+      <p class="kicker">A timed scroll</p>
+      <h2>How long this time?</h2>
       <div class="pick"><span>On</span>${appPicker()}</div>
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="How long">${FREE_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.freeMinutes}" data-action="free-minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
-      <a class="btn btn-gold go-btn" data-action="free-go" href="${pf.feed}" target="_blank" rel="noopener">Scroll ${pf.name} for ${S.freeMinutes} minutes</a>
+      <a class="btn btn-gold go-btn" data-action="free-go" href="${pf.feed}" target="_blank" rel="noopener">Scroll ${pf.name} for ${S.freeMinutes} minutes${ICONS.arrowR}</a>
     </section>
     ${budgetLine()}`;
 }
 
 // ----- Menu: every page in one place -----
 function viewMenu() {
-  const rows = Object.entries(PAGES).map(([id, [label, sub, icon]]) => `
+  const rows = Object.entries(PAGES).filter(([id]) => id !== "account").map(([id, [label, sub, icon]]) => `
     <li><button data-action="tab" data-tab="${id}"><span class="menu-ic">${icon}</span><span class="menu-tx"><b>${label}</b><small>${sub}</small></span>${ICONS.chev}</button></li>`).join("");
   return `
     ${pageHead("Menu", "", false)}
+    <button class="me-card" data-action="tab" data-tab="account">
+      <span class="avatar">${esc(initials(displayName(), S.user?.email))}</span>
+      <span class="menu-tx"><b>${esc(displayName())}</b><small>${esc(S.user?.email || "Your account")}</small></span>${ICONS.chev}
+    </button>
     <ul class="menu-list">${rows}</ul>
     ${wantsApp() ? `<div class="get-app">
       <span class="menu-ic">${ICONS.down}</span>
@@ -1029,15 +1097,6 @@ function viewMenu() {
     <p class="menu-foot"><a href="privacy.html">Privacy Policy</a><a href="terms.html">Terms of Service</a></p>`;
 }
 
-function visitRow(v) {
-  const title = v.kind === "free" ? `Free scroll on ${PLATFORMS[v.platform]?.name || v.platform}` : v.intent;
-  const status = v.outcome ? OUTCOME_WORD[v.outcome] : "In progress";
-  return `<li>
-    <span class="outcome-dot o-${v.outcome || "open"}" role="img" aria-label="${esc(status)}"></span>
-    <div class="what"><b>${esc(title)}</b><small>${esc(PLATFORMS[v.platform]?.name || "")} · ${relTime(v.started_at)} · ${esc(status)}</small></div>
-    <span class="right">${Math.max(1, Math.round(visitMinutes(v)))} min</span>
-  </li>`;
-}
 
 function viewActive(v) {
   const pf = PLATFORMS[v.platform] || PLATFORMS.tiktok;
@@ -1046,15 +1105,17 @@ function viewActive(v) {
   const left = ms(v.started_at) + total - Date.now();
   return `
     <section class="visit" aria-live="polite">
-      <p class="visit-on">${v.kind === "free" ? `Scrolling ${pf.name}` : `On ${pf.name}, looking for`}</p>
-      <p class="visit-intent">${v.kind === "free" ? "A scroll on purpose" : esc(v.intent)}</p>
-      <div class="loop-wrap ${left < 60000 ? "low" : ""}" id="loop-wrap">
-        ${loopTimer(left / total)}
-        <div class="loop-in"><div class="countdown" id="countdown" role="timer">${fmtClock(left)}</div><p class="visit-of">left of ${v.planned_minutes} min</p></div>
+      <div class="timer-card">
+        <p class="kicker">${v.kind === "free" ? `Scrolling ${pf.name}` : `On ${pf.name}, looking for`}</p>
+        <p class="visit-intent">${v.kind === "free" ? "A scroll on purpose" : esc(v.intent)}</p>
+        <div class="loop-wrap ${left < 60000 ? "low" : ""}" id="loop-wrap">
+          ${loopTimer(left / total)}
+          <div class="loop-in"><div class="countdown" id="countdown" role="timer">${fmtClock(left)}</div><p class="visit-of">left of ${v.planned_minutes} min</p></div>
+        </div>
+        <button class="btn btn-light" data-action="done">${ICONS.check} I'm done</button>
       </div>
       <div class="visit-actions">
-        <button class="btn btn-gold" data-action="done">I'm done</button>
-        ${APP ? `<button class="btn btn-ghost" data-action="reopen">Back to ${pf.name}</button>` : `<a class="btn btn-ghost" href="${esc(href)}" target="_blank" rel="noopener">Back to ${pf.name}</a>`}
+        ${APP ? `<button class="btn btn-ghost" data-action="reopen">Back to ${pf.name}${ICONS.arrowR}</button>` : `<a class="btn btn-ghost" href="${esc(href)}" target="_blank" rel="noopener">Back to ${pf.name}${ICONS.arrowR}</a>`}
       </div>
       <p class="hint">${APP ? `When the ring runs out, OwnIt covers ${pf.name} and brings you back.` : Notify.state() === "on" ? "You'll get a notification when the ring runs out." : "Found it early? Tap “I'm done”. Getting out early is the whole point."}</p>
     </section>
@@ -1073,53 +1134,43 @@ function viewCheckin(v) {
   const marks = { found: ICONS.check, partly: "~", distracted: "×" };
   return `
     <section class="checkin fade-in">
-      <p class="visit-on">${timeUp ? "Time's up." : "Welcome back."} ${timing}</p>
-      <h1>${free ? "<span>Was that scroll</span> worth it?" : "<span>Did you</span> find it?"}</h1>
-      ${free ? "" : `<p class="checkin-q">${esc(v.intent)}</p>`}
+      <header class="hi">
+        <p class="hello">${timeUp ? "Time's up." : "Welcome back."} ${timing}</p>
+        <h1 class="hi-title">${free ? "Was that scroll worth it?" : "Did you find it?"}</h1>
+        ${free ? "" : `<p class="checkin-q">${ICONS.search}<span>${esc(v.intent)}</span></p>`}
+      </header>
       <div class="answers">
-        ${OUTCOMES[free ? "free" : "search"].map(([id, label]) => `<button class="answer a-${id}" data-action="checkin" data-outcome="${id}" ${S.busy ? "disabled" : ""}><span class="answer-mark">${marks[id]}</span>${esc(label)}</button>`).join("")}
+        ${OUTCOMES[free ? "free" : "search"].map(([id, label]) => `<button class="answer a-${id}" data-action="checkin" data-outcome="${id}" ${S.busy ? "disabled" : ""}><span class="answer-mark">${marks[id]}</span><span class="answer-tx">${esc(label)}</span>${ICONS.chev}</button>`).join("")}
       </div>
       <p class="hint">An honest answer makes your weekly score mean something.</p>
     </section>`;
 }
 
-function weekChart(week, goal) {
-  const start = startOfWeek();
-  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const mins = names.map((_, i) => {
-    const a = start.getTime() + i * 86400000, b = a + 86400000;
-    return Math.round(week.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b).reduce((s, v) => s + visitMinutes(v), 0));
-  });
-  const todayIdx = (new Date().getDay() + 6) % 7;
-  const W = 640, H = 220, padL = 34, padR = 12, padT = 18, padB = 28;
-  const maxV = Math.max(goal * 1.25, ...mins, 10);
-  const step = maxV > 120 ? 60 : maxV > 60 ? 30 : 15;
-  const top = Math.ceil(maxV / step) * step;
-  const y = (v) => padT + (H - padT - padB) * (1 - v / top);
-  const bw = (W - padL - padR) / 7;
-  let g = "";
-  for (let t = 0; t <= top; t += step) g += `<line class="gridline" x1="${padL}" x2="${W - padR}" y1="${y(t)}" y2="${y(t)}"/><text x="${padL - 8}" y="${y(t) + 4}" text-anchor="end">${t}</text>`;
-  const bars = mins.map((m, i) => {
-    const x = padL + i * bw + bw * 0.22, w = bw * 0.56;
-    const h = Math.max(m ? 3 : 0, y(0) - y(m));
-    return `<rect class="${m > goal ? "bar-over" : "bar-fill"}" x="${x.toFixed(1)}" y="${(y(0) - h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="5"><title>${names[i]}: ${m} min</title></rect>
-      <text class="${i === todayIdx ? "today-label" : ""}" x="${(x + w / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle">${names[i]}</text>`;
-  }).join("");
-  const goalLine = `<line class="goal-line" x1="${padL}" x2="${W - padR}" y1="${y(goal)}" y2="${y(goal)}"/><text class="goal-label" x="${W - padR}" y="${y(goal) - 6}" text-anchor="end">Budget ${goal} min</text>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Minutes per day this week">${g}${bars}${goalLine}</svg>`;
-}
 
-/** The week as seven columns of dots, one per visit. Gold means you found what you came for. */
-function dotWeek(week) {
+/** This week, day by day: a mark for every day that stayed within budget, and a bar for its minutes. */
+function weekCard(week, goal) {
   const start = startOfWeek().getTime();
   const todayIdx = (new Date().getDay() + 6) % 7;
-  const cols = ["M", "T", "W", "T", "F", "S", "S"].map((name, i) => {
+  const full = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const days = full.map((name, i) => {
     const a = start + i * 86400000, b = a + 86400000;
-    const vs = week.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b).reverse();
-    const dots = vs.slice(0, 8).map((v, k) => `<i class="vd d-${v.outcome || "open"}" style="--i:${k}" title="${esc(v.intent || "Scroll")}"></i>`).join("");
-    return `<div class="dw-col ${i === todayIdx ? "today" : ""} ${i > todayIdx ? "future" : ""}"><div class="dw-dots">${dots}${vs.length > 8 ? `<small>+${vs.length - 8}</small>` : ""}</div><span>${name}</span></div>`;
-  }).join("");
-  return `<div class="dot-week" role="img" aria-label="Your visits this week, one dot each">${cols}</div>`;
+    const vs = week.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b);
+    const mins = Math.round(vs.reduce((s, v) => s + visitMinutes(v), 0));
+    return { name, mins, n: vs.length, today: i === todayIdx, future: i > todayIdx, over: mins > goal };
+  });
+  const top = Math.max(goal * 1.15, ...days.map((d) => d.mins), 1);
+  const kept = days.filter((d) => !d.future && !d.over).length;
+  const cols = days.map((d) => `<li class="${d.today ? "today" : ""} ${d.future ? "future" : ""} ${d.over ? "over" : ""} ${d.n ? "has" : ""}" title="${d.name}: ${d.mins} min">
+      <span class="wk-day">${d.name[0]}</span>
+      <span class="wk-mark">${d.over ? "!" : d.n ? ICONS.check : ""}</span>
+      <span class="wk-bar"><i style="height:${d.mins ? Math.max(9, (d.mins / top) * 100).toFixed(1) : 0}%"></i></span>
+      <span class="wk-min">${d.mins || ""}</span>
+    </li>`).join("");
+  return `<div class="wk" role="img" aria-label="Minutes per day this week. ${kept} of ${todayIdx + 1} days within your budget of ${goal} minutes.">
+      <ul class="wk-cols">${cols}</ul>
+      <span class="wk-goal" style="--at:${(goal / top).toFixed(3)}"><i>Budget ${goal} min</i></span>
+    </div>
+    <p class="wk-note"><b>${kept} of ${todayIdx + 1} ${todayIdx ? "days" : "day"}</b> within your budget so far.</p>`;
 }
 function viewInsights() {
   const goal = S.profile?.daily_goal_minutes || 45;
@@ -1143,46 +1194,49 @@ function viewInsights() {
         ${ART.week()}
         <h2>Nothing to measure yet</h2>
         <p>Start a visit from Home and check in when you come back. Your week shows up here.</p>
-        <button class="btn btn-primary" data-action="tab" data-tab="home">Go to Home</button>
+        <button class="btn btn-primary" data-action="tab" data-tab="home">Go to Home${ICONS.arrowR}</button>
       </section>`;
   }
-  const trend = lastRate != null && rate != null && rate !== lastRate ? `${rate > lastRate ? "Up" : "Down"} from ${lastRate}% last week.` : "";
+  const trend = lastRate != null && rate != null && rate !== lastRate ? ` ${rate > lastRate ? "Up" : "Down"} from ${lastRate}% last week.` : "";
+  const dayStart = startOfDay().getTime();
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const when = (v) => (ms(v.started_at) >= dayStart ? fmtTime(v.started_at) : days[new Date(v.started_at).getDay()]);
   return `
     <header class="page-head"><h1 class="page-title">Insights</h1><p class="page-sub">This week, Monday to today.</p></header>
-    <section class="hero-stat">
-      <b><span data-count="${rate == null ? "" : rate}">${rate == null ? "–" : rate}</span>${rate == null ? "" : "<i>%</i>"}</b>
-      <p>${rate == null ? "Check in after a visit to see how many were on purpose." : "of your visits got you what you came for."} ${trend}</p>
+    <section class="pane balance">
+      <div class="balance-top">
+        ${gauge(rate == null ? 0 : rate / 100, rate == null ? "–" : `<span data-count="${rate}">${rate}</span><i>%</i>`, "on purpose", rate == null ? "No check-ins yet" : `${rate} percent of visits on purpose`)}
+        <div class="balance-tx"><p class="kicker">This week</p>
+          ${rate == null ? `<b>No check-ins yet</b><small>Check in after a visit to see how many were on purpose.</small>`
+            : `<b>${found} of ${done.length} ${done.length === 1 ? "visit" : "visits"}</b><small>got you what you came for.${trend}</small>`}
+        </div>
+      </div>
+      <ul class="stats">
+        <li>${ICONS.arrow}<b>${week.length}</b><span>${week.length === 1 ? "visit" : "visits"}</span></li>
+        <li>${ICONS.clock}<b>${minutes}</b><span>minutes</span></li>
+        <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+      </ul>
     </section>
-    <dl class="facts">
-      <div><dt>${week.length === 1 ? "visit" : "visits"}</dt><dd>${week.length}</dd></div>
-      <div><dt>minutes</dt><dd>${minutes}</dd></div>
-      <div><dt>${pulled === 1 ? "time the feed won" : "times the feed won"}</dt><dd>${pulled}</dd></div>
-    </dl>
-    <section class="block">
-      <div class="block-head"><h2>Every visit is a dot</h2></div>
-      ${dotWeek(week)}
-      <div class="legend"><span><i class="vd d-found"></i>Found it</span><span><i class="vd d-partly"></i>Sort of</span><span><i class="vd d-distracted"></i>The feed won</span></div>
+    <section class="pane">
+      <div class="pane-head"><h2>Minutes per day</h2></div>
+      ${weekCard(week, goal)}
     </section>
-    <section class="block">
-      <div class="block-head"><h2>Minutes per day</h2><span class="hint">Red means over budget</span></div>
-      <div style="overflow-x:auto">${weekChart(week, goal)}</div>
-    </section>
-    <section class="block">
-      <div class="block-head"><h2>How your visits went</h2></div>
+    <section class="pane">
+      <div class="pane-head"><h2>How your visits went</h2></div>
       ${done.length ? `
         <div class="stack" role="img" aria-label="${counts.found} found, ${counts.partly} sort of, ${counts.distracted} distracted">
           ${["found", "partly", "distracted"].map((k) => counts[k] ? `<i class="o-${k}" style="width:${(counts[k] / done.length) * 100}%"></i>` : "").join("")}
         </div>
         <div class="legend">${["found", "partly", "distracted"].map((k) => `<span><i class="outcome-dot o-${k}"></i>${OUTCOME_WORD[k]}: ${counts[k]}</span>`).join("")}</div>`
-        : '<p class="empty">Check in after a visit and it will show up here.</p>'}
+        : '<p class="tl-empty">Check in after a visit and it will show up here.</p>'}
     </section>
-    ${byPlatform.length > 1 ? `<section class="block">
-      <div class="block-head"><h2>Where you went</h2></div>
+    ${byPlatform.length > 1 ? `<section class="pane">
+      <div class="pane-head"><h2>Where you went</h2></div>
       <ul class="list">${byPlatform.map(([id, n]) => `<li><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span><div class="what"><b>${PLATFORMS[id].name}</b></div><span class="right">${n} ${n === 1 ? "visit" : "visits"}</span></li>`).join("")}</ul>
     </section>` : ""}
-    <section class="block">
-      <div class="block-head"><h2>Every visit this week</h2></div>
-      <ul class="list">${week.slice(0, 30).map(visitRow).join("")}</ul>
+    <section class="pane">
+      <div class="pane-head"><h2>Every visit this week</h2></div>
+      <ul class="tl">${week.slice(0, 30).map((v) => timeRow(v, when(v))).join("")}</ul>
     </section>`;
 }
 
@@ -1390,13 +1444,18 @@ function viewLinkTest() {
 // Settings: every setting has a short note and a "How?" guide
 // ---------------------------------------------------------------------------
 /** One setting: title, what it does, the control, and a guide that opens when you tap "How?". */
-function setting(id, title, what, control, how) {
+function setting(id, title, what, control, how, inline) {
   const open = !!S.help[id];
+  const howBtn = how ? ` <button class="how-btn" data-action="help" data-id="${id}" aria-expanded="${open}">${open ? "Hide help" : "How?"}</button>` : "";
   return `<div class="set">
-    <div class="set-head"><div><h3>${title}</h3><p>${what}</p></div>${how ? `<button class="how-btn" data-action="help" data-id="${id}" aria-expanded="${open}">${open ? "Close" : "How?"}</button>` : ""}</div>
+    <div class="set-head"><div><h3>${title}</h3><p>${what}${howBtn}</p></div>${inline ? control : ""}</div>
     ${open ? `<ol class="how">${how.map((h) => `<li>${h}</li>`).join("")}</ol>` : ""}
-    ${control}
+    ${inline ? "" : control}
   </div>`;
+}
+/** An on/off switch. Tapping it sends the opposite of what it shows. */
+function toggle(action, on, label) {
+  return `<button type="button" class="switch" role="switch" aria-checked="${on}" aria-label="${esc(label)}" data-action="${action}" data-id="${on ? "off" : "on"}"><i></i></button>`;
 }
 function choice(action, options, current, attr = "id") {
   return `<div class="seg wrap" role="group">${options.map(([id, label]) => `<button type="button" class="seg-btn" aria-pressed="${String(id) === String(current)}" data-action="${action}" data-${attr}="${id}">${label}</button>`).join("")}</div>`;
@@ -1413,7 +1472,7 @@ function viewSettings() {
   const fonts = `<div class="font-grid" role="group" aria-label="Font">${Object.entries(FONTS).map(([id, f]) => `<button class="font-opt" aria-pressed="${id === L.font}" data-action="look-font" data-id="${id}"><b style='font-family:${f.display}'>${f.name}</b><small style='font-family:${f.body}'>${f.note}</small></button>`).join("")}</div>`;
 
   const lookSection = `
-    <section class="set-group"><h2>Look</h2>
+    <section class="set-group"><h2>Look</h2><div class="set-card">
       ${setting("theme", "Light or dark", "Pick one, or follow your phone.", choice("look-theme", [["dark", "Dark"], ["light", "Light"], ["system", "Same as phone"]], L.theme),
         ["<b>Dark</b> is how OwnIt is designed to look.", "<b>Light</b> is easier to read in bright sunlight.", "<b>Same as phone</b> switches by itself when your phone goes dark at night.", "This only changes OwnIt on this phone or computer."])}
       ${setting("colour", "Colour", "The main colour of buttons and highlights.", colours,
@@ -1422,22 +1481,22 @@ function viewSettings() {
         ["Tap a font to try it. Each box is written in its own font.", "<b>OwnIt</b> is the original. <b>Clean</b> is the plainest to read."])}
       ${setting("size", "Text size", "Make everything bigger or smaller.", choice("look-size", Object.entries(SIZES).map(([id, [name]]) => [id, name]), L.size),
         ["Tap a size. The pages grow or shrink straight away.", "If words get cut off, go one size down."])}
-      ${setting("contrast", "Stronger contrast", "Darker text and clearer lines.", choice("look-contrast", [["off", "Off"], ["on", "On"]], L.contrast ? "on" : "off"),
-        ["Turn this <b>On</b> if grey text is hard to read, or if you use your phone in bright sunlight."])}
-      ${setting("motion", "Animations", "Small movements when pages open.", choice("look-motion", [["on", "On"], ["off", "Off"]], L.motion ? "on" : "off"),
-        ["Turn this <b>Off</b> if movement on screen bothers you or your phone feels slow."])}
-    </section>`;
+      ${setting("contrast", "Stronger contrast", "Darker text and clearer lines.", toggle("look-contrast", !!L.contrast, "Stronger contrast"),
+        ["Turn this <b>On</b> if grey text is hard to read, or if you use your phone in bright sunlight."], true)}
+      ${setting("motion", "Animations", "Small movements when pages open.", toggle("look-motion", !!L.motion, "Animations"),
+        ["Turn this <b>Off</b> if movement on screen bothers you or your phone feels slow."], true)}
+    </div></section>`;
 
   const visitSection = `
-    <section class="set-group"><h2>Your time</h2>
+    <section class="set-group"><h2>Your time</h2><div class="set-card">
       ${setting("budget", "Daily budget", `You have ${goal} minutes a day.`, `<div class="chips">${GOAL_OPTIONS.map((m) => `<button class="chip" aria-pressed="${m === goal}" data-action="set-goal" data-min="${m}">${m} min</button>`).join("")}</div>`,
         ["This is the total time you want to spend on social apps each day.", "Every visit you start in OwnIt counts toward it.", "The bar on Home shows how much is left. Insights turns red on days you went over."])}
       ${setting("minutes", "Usual search time", "The time already selected when you open Home.", choice("default-minutes", SEARCH_MINUTES.map((m) => [m, m + " min"]), store.get("ownit.minutes", 5), "min"),
         ["Pick the time most of your searches need.", "You can still change it for a single visit on Home."])}
-    </section>`;
+    </div></section>`;
 
   const guardSection = APP ? `
-    <section class="set-group"><h2>OwnIt Guard</h2>
+    <section class="set-group"><h2>OwnIt Guard</h2><div class="set-card">
       ${setting("perms", "Permissions", "All of these must be on, or apps can be opened directly.", `<ul class="perms">
           ${permRow(st.notifyOn !== false, "Notifications", "setup-notify")}
           ${permRow(!!st.overlayOn, "Show on top of other apps", "overlay-settings")}
@@ -1449,13 +1508,13 @@ function viewSettings() {
         ["Tap an app to guard it or to stop guarding it. Guarded apps are filled in.", "A guarded app shows “Not so fast” if someone opens it directly, then returns to OwnIt.", "At least one app always stays guarded."])}
       ${setting("link", "Search link", store.get("ownit.link.tiktok", null) ? "Using the link style you tested on this phone." : "If TikTok opens without your search, test which link works.", `<button class="btn btn-outline" data-action="lt-open">Test search links</button>`,
         ["Tap <b>Test search links</b>.", "Tap <b>Try it</b> on a style. TikTok opens for one minute.", "Come back to OwnIt and answer: did TikTok show results for your search?", "Tap <b>Yes, use this</b> on the first style that works. OwnIt remembers it."])}
-    </section>` : `
-    <section class="set-group"><h2>Time's-up alerts</h2>
+    </div></section>` : `
+    <section class="set-group"><h2>Time's-up alerts</h2><div class="set-card">
       ${setting("webnotify", "Notifications", Notify.state() === "on" ? "On. OwnIt calls you back when time is up." : "Get a notification when your time is up.", notifyCard(false) || '<p class="set-ok">' + ICONS.check + " Notifications are on</p>",
         Notify.isIOS
           ? ["Open OwnIt in <b>Safari</b>.", "Tap the <b>Share</b> button, then <b>Add to Home Screen</b>.", "Open OwnIt from the new icon on your Home Screen.", "Come back to this page and tap <b>Turn on</b>, then <b>Allow</b>."]
           : ["Tap <b>Turn on</b>.", "Your browser asks for permission. Tap <b>Allow</b>.", "If nothing happens, notifications are blocked: open your browser's site settings for OwnIt and allow them."])}
-    </section>`;
+    </div></section>`;
 
   return `
     ${pageHead("Settings", "Tap “How?” next to any setting for step-by-step help.")}
