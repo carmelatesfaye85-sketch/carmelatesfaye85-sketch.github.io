@@ -219,6 +219,7 @@ function visitMinutes(v) {
   const end = v.ended_at ? ms(v.ended_at) : Date.now();
   return Math.max(0, Math.min((end - ms(v.started_at)) / 60000, v.planned_minutes + 60));
 }
+const SIGNED_OUT_ERR = /SESSION_EXPIRED|row-level security|jwt expired/i;
 function friendlyError(msg) {
   const m = String(msg || "");
   if (/invalid login credentials/i.test(m)) return "That email and password don't match. Check them and try again.";
@@ -229,6 +230,7 @@ function friendlyError(msg) {
   if (/provider is not enabled/i.test(m)) return "Google sign-in isn't turned on yet for this site. Use email for now.";
   if (/failed to fetch|network/i.test(m)) return "Couldn't reach the server. Check your internet connection and try again.";
   if (/rate limit/i.test(m)) return "Too many tries. Wait a minute and try again.";
+  if (SIGNED_OUT_ERR.test(m)) return "You were signed out on this phone. Sign in again and your answers will still be here.";
   return m || "Something went wrong. Try again.";
 }
 
@@ -316,6 +318,30 @@ async function createSupabaseBackend() {
     hasApp: u.user_metadata?.android_app === true,
   };
   let userId = null;
+  /** Makes sure this phone still has a live sign-in before talking to the database.
+   *  On iPhone the sign-in can lapse while Safari sleeps; without this, the request goes out signed-out
+   *  and the database refuses it ("new row violates row-level security policy"). */
+  const live = async () => {
+    let s = (await sb.auth.getSession()).data.session;
+    if (!s || (s.expires_at && s.expires_at * 1000 < Date.now() + 60000)) {
+      const r = await sb.auth.refreshSession();
+      if (r.data?.session) s = r.data.session;
+    }
+    if (!s) throw new Error("SESSION_EXPIRED");
+    userId = s.user.id;
+    return userId;
+  };
+  /** Runs one database call with a live sign-in, and tries once more after refreshing it if the database says no. */
+  const db = async (call) => {
+    await live();
+    const res = await call();
+    if (res.error && /row-level security|jwt/i.test(res.error.message)) {
+      await sb.auth.refreshSession().catch(() => {});
+      await live();
+      return need(await call());
+    }
+    return need(res);
+  };
 
   return {
     preview: false,
@@ -344,20 +370,20 @@ async function createSupabaseBackend() {
     async resetPassword(email) { need(await sb.auth.resetPasswordForEmail(email, { redirectTo })); },
     async updatePassword(pw) { need(await sb.auth.updateUser({ password: pw })); },
     async signOut() { await sb.auth.signOut(); },
-    async getProfile() { return need(await sb.from("profiles").select("*").eq("id", userId).maybeSingle()); },
-    async saveProfile(p) { return need(await sb.from("profiles").upsert({ id: userId, ...p }).select().single()); },
+    async getProfile() { return db(() => sb.from("profiles").select("*").eq("id", userId).maybeSingle()); },
+    async saveProfile(p) { return db(() => sb.from("profiles").upsert({ id: userId, ...p }).select().single()); },
     async listVisits(sinceIso) {
-      return need(await sb.from("visits").select("*").gte("started_at", sinceIso).order("started_at", { ascending: false }).limit(1000));
+      return db(() => sb.from("visits").select("*").gte("started_at", sinceIso).order("started_at", { ascending: false }).limit(1000));
     },
-    async startVisit(v) { return need(await sb.from("visits").insert({ ...v, user_id: userId }).select().single()); },
-    async updateVisit(id, patch) { return need(await sb.from("visits").update(patch).eq("id", id).select().single()); },
+    async startVisit(v) { return db(() => sb.from("visits").insert({ ...v, user_id: userId }).select().single()); },
+    async updateVisit(id, patch) { return db(() => sb.from("visits").update(patch).eq("id", id).select().single()); },
     async markHasApp() { need(await sb.auth.updateUser({ data: { android_app: true } })); },
-    async listSaves() { return need(await sb.from("saves").select("*").order("created_at", { ascending: false }).limit(1000)); },
-    async addSave(row) { return need(await sb.from("saves").insert({ ...row, user_id: userId }).select().single()); },
-    async updateSave(id, patch) { return need(await sb.from("saves").update(patch).eq("id", id).select().single()); },
-    async deleteSave(id) { need(await sb.from("saves").delete().eq("id", id)); },
+    async listSaves() { return db(() => sb.from("saves").select("*").order("created_at", { ascending: false }).limit(1000)); },
+    async addSave(row) { return db(() => sb.from("saves").insert({ ...row, user_id: userId }).select().single()); },
+    async updateSave(id, patch) { return db(() => sb.from("saves").update(patch).eq("id", id).select().single()); },
+    async deleteSave(id) { await db(() => sb.from("saves").delete().eq("id", id)); },
     async savePushSubscription(sub) {
-      need(await sb.from("push_subscriptions").upsert(
+      await db(() => sb.from("push_subscriptions").upsert(
         { user_id: userId, endpoint: sub.endpoint, p256dh: sub.keys.p256dh, auth: sub.keys.auth },
         { onConflict: "endpoint" },
       ));
@@ -509,7 +535,8 @@ async function afterSignIn(user) {
   try {
     await loadUserData();
     if (!S.profile?.onboarded_at) {
-      S.onb = { step: 0, answers: { display_name: user.name || "", apps: ["tiktok"], ...(S.profile || {}) } };
+      const draft = store.get("ownit.onbDraft", null);
+      S.onb = draft?.answers ? draft : { step: 0, answers: { display_name: user.name || "", apps: ["tiktok"], ...(S.profile || {}) } };
       S.phase = "onboarding";
     } else {
       S.phase = "app";
@@ -2357,7 +2384,13 @@ async function withBusy(fn) {
   if (S.busy) return;
   S.busy = true; render();
   try { await fn(); }
-  catch (e) { S.authMsg = { kind: "error", text: friendlyError(e.message) }; if (S.phase === "app" || S.phase === "reality" || S.phase === "onboarding") toast(friendlyError(e.message)); }
+  catch (e) {
+    S.authMsg = { kind: "error", text: friendlyError(e.message) };
+    if (SIGNED_OUT_ERR.test(e.message) && S.user) {
+      Object.assign(S, { user: null, profile: null, visits: [], phase: "auth" });
+      S.api.signOut().catch(() => {});
+    } else if (S.phase === "app" || S.phase === "reality" || S.phase === "onboarding") toast(friendlyError(e.message));
+  }
   finally { S.busy = false; render(); }
 }
 
@@ -2460,6 +2493,7 @@ const actions = {
     if (q.type === "text" && q.required && !(v || "").trim()) { $("#onb-text")?.focus(); return; }
     if (S.onb.step < QUESTIONS.length - 1) { S.onb.step++; render(); $("#onb-text")?.focus(); return; }
     const a = S.onb.answers;
+    store.set("ownit.onbDraft", S.onb);
     withBusy(async () => {
       S.profile = await S.api.saveProfile({
         display_name: (a.display_name || "").trim(),
@@ -2472,6 +2506,7 @@ const actions = {
         daily_goal_minutes: a.daily_goal_minutes || suggestedGoal(a),
         onboarded_at: new Date().toISOString(),
       });
+      store.set("ownit.onbDraft", null);
       S.platform = userApps()[0];
       syncGuardedApps();
       S.phase = "reality";
