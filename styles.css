@@ -2322,7 +2322,6 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 @media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
 
 /* landing: say clearly what to do next */
-.lp-scroll-cue { font-size: 14px; letter-spacing: .06em; color: var(--lp-ink); font-weight: 600; }
 .sc-hint { display: none; }
 .lp.pin .sc-hint, .lp .lp-qs.tap .sc-hint { display: block; position: relative; z-index: 1; margin: 10px auto 0; padding: 0 22px; max-width: 680px; text-align: center; font-size: 15px; line-height: 1.4; color: rgba(18, 34, 74, .82); }
 .sc-hint b { color: #12224A; }

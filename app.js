@@ -2305,7 +2305,7 @@ function viewLanding() {
           <p class="lp-h-line">${words("of their life to scrolling.")}</p>
           <small class="lp-hero-src">About 141 minutes a day over 50 years (Statista, 2025)</small>
         </div>
-        <div class="lp-scroll-cue" aria-hidden="true"><span></span>Scroll down to start</div>
+        <div class="lp-scroll-cue" aria-hidden="true"><span></span>Scroll</div>
       </section>
     </div>
 
