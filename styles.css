@@ -2286,3 +2286,55 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 .shorts-setup p { margin: 0; font-size: 14.5px; color: var(--ink); }
 .shorts-setup .small-note { font-size: 13.5px; color: var(--muted); }
 .link-btn { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* ---------- batch 3: Today card, your apps, tour, landing cues ---------- */
+.tabbar { grid-template-columns: repeat(5, minmax(0, 1fr)); padding-left: 4px; padding-right: 4px; }
+.tabbar .tab-ic { width: min(52px, 100%); }
+.today-card { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 4px 16px; width: 100%; max-width: 640px; padding: 16px 18px; border: 0; border-radius: 26px; background: var(--card); box-shadow: var(--card-shadow); color: var(--ink); text-align: left; cursor: pointer; }
+.today-card .gauge { grid-row: span 2; width: 74px; height: 74px; }
+.today-card .gauge b { font-size: 20px; }
+.today-card .gauge small { font-size: 10.5px; }
+.today-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.today-tx b { font-size: 16.5px; font-weight: 700; }
+.today-tx small { font-size: 13.5px; color: var(--muted); }
+.today-go { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.today-go svg { width: 16px; height: 16px; }
+.my-apps { display: flex; flex-direction: column; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+.my-apps li { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 6px 8px 6px 16px; border-radius: 16px; background: var(--tint-soft); }
+.my-apps b { flex: 1; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-apps small { padding-right: 10px; font-size: 13px; color: var(--muted); }
+.btn-sm { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.add-app { display: flex; flex-direction: column; gap: 12px; }
+.add-app .add-app-h { margin: 4px 0 0; font-weight: 700; font-size: 15px; color: var(--ink); }
+.add-app .chips .chip { display: inline-flex; align-items: center; gap: 8px; }
+.add-app .field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--muted); }
+select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); padding: 0 12px; }
+.tour { position: fixed; inset: 0; z-index: 80; }
+.tour-spot { position: fixed; display: none; border-radius: 22px; box-shadow: 0 0 0 9999px rgba(10, 18, 42, .62), 0 0 0 3px var(--brand-ink, #F2EFE6); pointer-events: none; transition: left .3s ease, top .3s ease, width .3s ease, height .3s ease; }
+.tour-card { position: fixed; left: 16px; right: 16px; max-width: 400px; margin: 0 auto; padding: 20px; border-radius: 24px; background: var(--card); color: var(--ink); box-shadow: 0 24px 60px -20px rgba(0, 0, 0, .5); }
+@media (min-width: 900px) { .tour-card { right: auto; width: 380px; margin: 0; } }
+.tour-card .kicker { margin: 0 0 4px; }
+.tour-card h2 { margin: 0 0 6px; font-size: 22px; font-weight: 700; }
+.tour-card p { margin: 0; font-size: 15.5px; line-height: 1.45; color: var(--muted); }
+.tour-row { display: flex; align-items: center; justify-content: flex-end; gap: 14px; margin-top: 16px; }
+.tour-skip { margin-right: auto; padding: 8px 4px; border: 0; background: none; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.tour-again { align-self: flex-start; }
+@media (prefers-reduced-motion: reduce) { .tour-spot { transition: none; } }
+
+/* landing: say clearly what to do next */
+.lp-scroll-cue { font-size: 14px; letter-spacing: .06em; color: var(--lp-ink); font-weight: 600; }
+.sc-hint { display: none; }
+.lp.pin .sc-hint, .lp .lp-qs.tap .sc-hint { display: block; position: relative; z-index: 1; margin: 10px auto 0; padding: 0 22px; max-width: 680px; text-align: center; font-size: 15px; line-height: 1.4; color: rgba(18, 34, 74, .82); }
+.sc-hint b { color: #12224A; }
+.sc-hint .h-b, .lp-qs-pin.last .sc-hint .h-a { display: none; }
+.lp-qs-pin.last .sc-hint .h-b { display: inline; }
+.sc-next { animation: nx-pulse 2.2s ease-in-out infinite; }
+@keyframes nx-pulse { 0%, 100% { box-shadow: 0 10px 24px -12px rgba(18, 34, 74, .7), 0 0 0 0 rgba(18, 34, 74, .35); } 50% { box-shadow: 0 10px 24px -12px rgba(18, 34, 74, .7), 0 0 0 10px rgba(18, 34, 74, 0); } }
+.lp-more { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 0 8px; font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--lp-muted); }
+.lp-more i { width: 12px; height: 12px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); animation: more-bob 1.6s ease-in-out infinite; }
+@keyframes more-bob { 50% { transform: translateY(5px) rotate(45deg); } }
+.lp-how-hint { margin: 14px 0 0; text-align: center; font-size: 14px; color: var(--lp-muted); }
+@media (min-width: 860px) { .lp-how-hint { text-align: left; } }
+@media (prefers-reduced-motion: reduce) { .sc-next, .lp-more i { animation: none; } }
+.set-card .small-note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
+.set-card .small-note a { color: var(--ink); font-weight: 700; }

@@ -21,6 +21,8 @@ function guardedApps() {
   return list.length ? list : ["tiktok"];
 }
 function syncGuardedApps() { if (APP) appCall("setGuardedApps", guardedApps().join(",")); }
+/** Labels for an app id, even one that was removed later. */
+const pfName = (id) => PLATFORMS[id]?.name || APP_CATALOG[id]?.name || (String(id).startsWith("c:") ? String(id).slice(2).split("|")[0] : id);
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -42,6 +44,48 @@ const PLATFORMS = {
     feed: "https://www.instagram.com/reels/",
   },
 };
+const BUILT_IN = Object.keys(PLATFORMS);
+/** Apps people can add in Settings → Your apps. `pkgs` are the Android app names, so the Guard knows them. */
+const APP_CATALOG = {
+  substack: { name: "Substack", color: "#FF6719", search: "https://substack.com/search/{q}", feed: "https://substack.com/home", pkgs: ["com.substack.app"] },
+  x: { name: "X", color: "#3A3A3A", search: "https://x.com/search?q={q}", feed: "https://x.com/home", pkgs: ["com.twitter.android"] },
+  facebook: { name: "Facebook", color: "#1877F2", search: "https://www.facebook.com/search/top/?q={q}", feed: "https://www.facebook.com/", pkgs: ["com.facebook.katana", "com.facebook.lite"] },
+  reddit: { name: "Reddit", color: "#FF4500", search: "https://www.reddit.com/search/?q={q}", feed: "https://www.reddit.com/", pkgs: ["com.reddit.frontpage"] },
+  pinterest: { name: "Pinterest", color: "#E60023", search: "https://www.pinterest.com/search/pins/?q={q}", feed: "https://www.pinterest.com/", pkgs: ["com.pinterest"] },
+  linkedin: { name: "LinkedIn", color: "#0A66C2", search: "https://www.linkedin.com/search/results/all/?keywords={q}", feed: "https://www.linkedin.com/feed/", pkgs: ["com.linkedin.android"] },
+  threads: { name: "Threads", color: "#555555", search: "https://www.threads.net/search?q={q}", feed: "https://www.threads.net/", pkgs: ["com.instagram.barcelona"] },
+  snapchat: { name: "Snapchat", color: "#E8C400", search: "", feed: "https://www.snapchat.com/", pkgs: ["com.snapchat.android"] },
+  telegram: { name: "Telegram", color: "#229ED9", search: "", feed: "https://web.telegram.org/", pkgs: ["org.telegram.messenger"] },
+};
+const CUSTOM_COLORS = ["#7A5AF8", "#0E9F6E", "#D97706", "#DB2777", "#2563EB", "#0891B2"];
+/** "c:Name|https://site|android.package" — an app someone added by hand. */
+function parseCustom(entry) {
+  const [name, site, pkg] = entry.slice(2).split("|");
+  if (!name || !site) return null;
+  let n = 0; for (const ch of entry) n = (n + ch.charCodeAt(0)) % CUSTOM_COLORS.length;
+  return { name, color: CUSTOM_COLORS[n], search: "", feed: site, pkgs: pkg ? [pkg] : [], custom: true };
+}
+/** Adds the apps this person added (Substack, their own…) next to TikTok, YouTube and Instagram. */
+function refreshPlatforms() {
+  for (const id of Object.keys(PLATFORMS)) if (!BUILT_IN.includes(id)) delete PLATFORMS[id];
+  for (const id of S.profile?.apps || []) {
+    if (BUILT_IN.includes(id)) continue;
+    const def = APP_CATALOG[id] || (id.startsWith("c:") ? parseCustom(id) : null);
+    if (!def) continue;
+    PLATFORMS[id] = {
+      ...def, extra: true,
+      search: (q) => (def.search ? def.search.replace("{q}", encodeURIComponent(q)) : def.feed),
+    };
+  }
+  syncAppPackages();
+}
+/** Tells the Android app which phone apps belong to the added apps, so the Guard can guard them. */
+function syncAppPackages() {
+  if (!APP?.setExtraApps) return;
+  const out = {};
+  for (const [id, pf] of Object.entries(PLATFORMS)) if (pf.extra && pf.pkgs?.length) out[id] = { name: pf.name, pkgs: pf.pkgs };
+  appCall("setExtraApps", JSON.stringify(out));
+}
 const SEARCH_MINUTES = [3, 5, 10, 15];
 const FREE_MINUTES = [5, 10, 15, 20];
 const GOAL_OPTIONS = [15, 30, 45, 60, 90, 120];
@@ -84,6 +128,7 @@ const ICONS = {
   logo: '<svg width="22" height="22" viewBox="186 268 652 488" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="83" stroke-linecap="round"><path d="M430 351A161 161 0 1 0 591 505"/><path d="M756 351V673"/></g><circle cx="544" cy="398" r="46" fill="currentColor"/></svg>',
   search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   arrow: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>',
+  today: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 1-8.5 6"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>',
   home: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>',
   chart: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   user: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
@@ -503,6 +548,20 @@ const S = {
 const root = document.getElementById("root");
 
 function openVisit() { return S.visits.find((v) => !v.outcome) || null; }
+/**
+ * A visit whose time ran out more than 10 minutes ago and was never ended (the phone died, or was
+ * switched off, while the timer ran): end it at its planned time, so it stops counting.
+ */
+function closeStaleVisits() {
+  const now = Date.now();
+  for (const v of S.visits) {
+    if (v.outcome || v.ended_at) continue;
+    const end = ms(v.started_at) + v.planned_minutes * 60000;
+    if (now < end + 10 * 60000) continue;
+    v.ended_at = new Date(end).toISOString();
+    if (!String(v.id).startsWith("pending-")) S.api.updateVisit(v.id, { ended_at: v.ended_at }).catch(() => {});
+  }
+}
 function visitMode(v) { return !v ? null : v.ended_at || Date.now() >= ms(v.started_at) + v.planned_minutes * 60000 ? "checkin" : "active"; }
 function userApps() {
   const picked = (S.profile?.apps || []).filter((a) => PLATFORMS[a]);
@@ -694,7 +753,7 @@ function startPause(p) {
 function launch(p, el, e) {
   S.blocked = null; S.moment = null; S.intentError = false;
   if (p.kind === "free") {
-    if (APP) { e?.preventDefault(); appCall("startVisit", p.platform, "free", "", p.mins); }
+    if (APP) { e?.preventDefault(); if (PLATFORMS[p.platform]?.extra) appStartVisit(p.platform, "free", "", p.mins, PLATFORMS[p.platform].feed); else appCall("startVisit", p.platform, "free", "", p.mins); }
     unlockAudio();
     setTimeout(() => { S.showFree = false; startVisit("free", "", p.mins, "", p.platform); }, 0);
     return;
@@ -713,7 +772,9 @@ async function loadUserData() {
   const [profile, visits] = await Promise.all([S.api.getProfile(), S.api.listVisits(since)]);
   S.profile = profile;
   S.visits = visits || [];
-  if (!S.platform) S.platform = userApps()[0];
+  refreshPlatforms();
+  closeStaleVisits();
+  if (!S.platform || !PLATFORMS[S.platform]) S.platform = userApps()[0];
   syncGuardedApps();
   if (APP && S.user && !S.user.hasApp) { S.user.hasApp = true; S.api.markHasApp().catch(() => {}); }
   if (S.user?.hasApp) store.set("ownit.noApp", true);
@@ -996,6 +1057,7 @@ const WORDMARK = `<span class="wm" role="img" aria-label="OwnIt"><svg viewBox="2
 
 const PAGES = {
   home: ["Home", "Search for one thing and go", ICONS.home],
+  today: ["Today", "Your budget and what happened today", ICONS.today],
   saved: ["Saved", "Videos you kept, by category", ICONS.bookmark],
   insights: ["Insights", "How your week went", ICONS.chart],
   scroll: ["Scroll on purpose", "A timed scroll, no search", ICONS.wave],
@@ -1004,7 +1066,7 @@ const PAGES = {
   answers: ["Reality check", "Your answers and your numbers", ICONS.mirror],
   account: ["Account", "Your name, email and sign out", ICONS.user],
 };
-const TABS = ["home", "saved", "insights", "menu"];
+const TABS = ["home", "today", "saved", "insights", "menu"];
 function navItems() { return TABS.map((id) => (id === "menu" ? ["menu", "Menu", ICONS.menu] : [id, PAGES[id][0], PAGES[id][2]])); }
 function goTo(tab) { S.tab = tab; S.linkTest = null; S.editSave = null; render(); window.scrollTo({ top: 0 }); }
 function pageHead(title, sub, back = true) {
@@ -1126,10 +1188,11 @@ function viewApp() {
   if (mode === "active") page = viewActive(v);
   else if (mode === "checkin") page = viewCheckin(v);
   else if (S.linkTest) page = viewLinkTest();
-  else page = { saved: viewSaved, insights: viewInsights, menu: viewMenu, scroll: viewScroll, settings: viewSettings, guide: viewGuide, answers: viewAnswers, account: viewAccount }[S.tab]?.() ?? viewHome();
+  else page = { today: viewToday, saved: viewSaved, insights: viewInsights, menu: viewMenu, scroll: viewScroll, settings: viewSettings, guide: viewGuide, answers: viewAnswers, account: viewAccount }[S.tab]?.() ?? viewHome();
   if (S.draft) page += viewSaveSheet(mode === "active" ? v : null);
   page += viewMomentFull();
   page += viewPause();
+  if (!mode && !setup) { maybeStartTour(); page += viewTour(); }
 
   const current = mode ? "home" : TABS.includes(S.tab) ? S.tab : "menu";
   const tabs = navItems().map(([id, label, icon]) => `<button data-action="tab" data-tab="${id}" ${current === id ? 'aria-current="page"' : ""}><span class="tab-ic">${icon}</span>${label}</button>`).join("");
@@ -1172,7 +1235,7 @@ function budgetLine() {
 }
 function appPicker() {
   return `<div class="seg" role="group" aria-label="App">
-    ${userApps().map((id) => `<button type="button" class="seg-btn" aria-pressed="${id === S.platform}" data-action="platform" data-id="${id}"><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span>${PLATFORMS[id].name}</button>`).join("")}
+    ${userApps().map((id) => `<button type="button" class="seg-btn" aria-pressed="${id === S.platform}" data-action="platform" data-id="${id}"><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span>${esc(PLATFORMS[id].name)}</button>`).join("")}
   </div>`;
 }
 function viewMomentFull() {
@@ -1207,13 +1270,13 @@ function markArt() {
 function fmtTime(iso) { const d = new Date(iso); return d.getHours() + ":" + String(d.getMinutes()).padStart(2, "0"); }
 /** One visit on a timeline: when, how it went, what it was. */
 function timeRow(v, when) {
-  const title = v.kind === "free" ? `Free scroll on ${PLATFORMS[v.platform]?.name || v.platform}` : v.intent;
+  const title = v.kind === "free" ? `Free scroll on ${pfName(v.platform)}` : v.intent;
   const status = v.outcome ? OUTCOME_WORD[v.outcome] : "In progress";
   const mark = { found: ICONS.check, partly: "~", distracted: "×" }[v.outcome] || "";
   return `<li class="tl-row">
     <time>${esc(when)}</time>
     <span class="tl-node n-${v.outcome || "open"}" role="img" aria-label="${esc(status)}">${mark}</span>
-    <div class="tl-tx"><b>${esc(title)}</b><small>${esc(PLATFORMS[v.platform]?.name || "")} · ${Math.max(1, Math.round(visitMinutes(v)))} min · ${esc(status)}</small></div>
+    <div class="tl-tx"><b>${esc(title)}</b><small>${esc(pfName(v.platform))} · ${Math.max(1, Math.round(visitMinutes(v)))} min · ${esc(status)}</small></div>
   </li>`;
 }
 function viewHome() {
@@ -1251,12 +1314,7 @@ function viewHome() {
       <p class="hello">${greeting()}, ${esc(displayName())}</p>
       <h1 class="hi-title">${head}<i class="sun" aria-hidden="true"></i></h1>
       <p class="hi-sub">${sub}</p>
-      <div class="hi-pills">
-        ${st.days ? `<span class="pill streak-pill"><i aria-hidden="true"></i>${streakText(st)}</span>` : ""}
-        ${quiet ? `<span class="pill">Quiet hours until ${hourName(quietSet().to)}</span>` : ""}
-      </div>
     </header>
-    ${showReportOnHome() ? viewWeekReport("home") : ""}
     <form class="go feature" data-submit="go" novalidate>
       ${markArt()}
       <p class="kicker">Search on purpose</p>
@@ -1266,12 +1324,91 @@ function viewHome() {
       ${recent.length ? `<div class="recent" aria-label="Recent searches">${recent.map((v) => `<button type="button" class="chip chip-soft" data-action="reuse" data-q="${esc(v.intent)}">${esc(v.intent)}</button>`).join("")}</div>` : ""}
       <div class="pick"><span>On</span>${appPicker()}</div>
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="Time you need">${SEARCH_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.minutes}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
-      <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${pf.name}${ICONS.arrowR}</a>
+      <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${esc(pf.name)}${ICONS.arrowR}</a>
     </form>
+    <button class="today-card" data-action="tab" data-tab="today">
+      ${gauge(left / goal, left, "min", `${left} of ${goal} minutes left today`)}
+      <span class="today-tx"><b>${used >= goal ? "Budget used for today" : `${left} of ${goal} min left today`}</b><small>${st.days ? esc(streakText(st)) + " · " : ""}${today.length} ${today.length === 1 ? "visit" : "visits"} today${quiet ? ` · quiet hours until ${hourName(quietSet().to)}` : ""}</small></span>
+      <span class="today-go">See your day${ICONS.chev}</span>
+    </button>
+  </div>`;
+}
+
+// ----- First-time tour: points at each part of the app, one at a time -----
+const TOUR = [
+  [".go .search-box", "Start here", "Type what you're looking for. For example: “easy injera recipe”."],
+  [".go .pick", "Pick the app and the time", "Tap the app you want, then how many minutes you need."],
+  [".go-btn", "Then tap Go", "OwnIt opens the app straight on your search, with a timer. When time's up, it brings you back."],
+  [".tabbar [data-tab=today], .sidebar [data-tab=today]", "Today", "Your daily budget, your visits and the time your phone counted. All in one place."],
+  [".tabbar [data-tab=saved], .sidebar [data-tab=saved]", "Saved", "Videos you shared to OwnIt, sorted into categories, so you can watch them on purpose later."],
+  [".tabbar [data-tab=insights], .sidebar [data-tab=insights]", "Insights", "How your week went: how many visits got you what you came for."],
+  [".tabbar [data-tab=menu], .sidebar [data-tab=menu]", "Menu", "Everything else: Settings, adding apps like Substack, the step-by-step Guide and your account."],
+];
+const tourTarget = (sel) => [...document.querySelectorAll(sel)].find((el) => el.offsetParent !== null || el.getClientRects().length);
+function viewTour() {
+  if (S.tour == null) return "";
+  const [, title, text] = TOUR[S.tour];
+  const last = S.tour === TOUR.length - 1;
+  return `<div class="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t">
+    <div class="tour-spot" aria-hidden="true"></div>
+    <div class="tour-card">
+      <p class="kicker">${S.tour + 1} of ${TOUR.length}</p>
+      <h2 id="tour-t">${esc(title)}</h2>
+      <p>${esc(text)}</p>
+      <div class="tour-row">
+        ${last ? "" : `<button class="tour-skip" data-action="tour-end">Skip</button>`}
+        <button class="btn btn-primary" data-action="tour-next">${last ? "Got it, let's start" : "Next"}${last ? "" : ICONS.arrowR}</button>
+      </div>
+    </div>
+  </div>`;
+}
+/** Puts the highlight on the part being explained, and the card next to it. */
+function placeTour() {
+  const box = document.querySelector(".tour"); if (!box || S.tour == null) return;
+  const el = tourTarget(TOUR[S.tour][0]);
+  const spot = box.querySelector(".tour-spot"), card = box.querySelector(".tour-card");
+  if (!el) { spot.style.display = "none"; card.style.top = "30%"; return; }
+  const inBar = !!el.closest(".tabbar, .sidebar");
+  if (!inBar) el.scrollIntoView({ block: "center" });
+  requestAnimationFrame(() => {
+    const r = el.getBoundingClientRect(), pad = 8;
+    Object.assign(spot.style, { display: "block", left: r.left - pad + "px", top: r.top - pad + "px", width: r.width + pad * 2 + "px", height: r.height + pad * 2 + "px" });
+    const ch = card.offsetHeight, vh = innerHeight;
+    const below = r.bottom + pad + 14, above = r.top - pad - 14 - ch;
+    card.style.top = Math.max(12, r.top + r.height / 2 > vh / 2 ? above : Math.min(below, vh - ch - 12)) + "px";
+    if (innerWidth >= 900) { card.style.left = Math.min(Math.max(16, r.left), innerWidth - card.offsetWidth - 16) + "px"; }
+  });
+}
+function maybeStartTour() {
+  if (S.tour != null || store.get("ownit.tourDone", false) || S.tab !== "home" || openVisit() || S.pause) return;
+  if (document.querySelector(".onb.setup")) return;
+  S.tour = 0;
+}
+
+// ----- Today: the budget, the phone's own count and what happened -----
+function viewToday() {
+  const goal = S.profile?.daily_goal_minutes || 45;
+  const used = todayMinutes();
+  const left = Math.max(0, goal - used);
+  const dayStart = startOfDay().getTime();
+  const today = S.visits.filter((v) => ms(v.started_at) >= dayStart);
+  const found = today.filter((v) => v.outcome === "found").length;
+  const pulled = today.filter((v) => v.outcome === "distracted").length;
+  const auto = Autopilot.on(new Date());
+  const st = streak();
+  const quiet = inQuiet();
+  return `
+    <header class="page-head"><h1 class="page-title">Today</h1><p class="page-sub">${used >= goal ? `You've used your ${goal} minutes. Tomorrow starts fresh.` : `${left} of your ${goal} minutes are still yours today.`}</p>
+      ${st.days || quiet ? `<div class="hi-pills">
+        ${st.days ? `<span class="pill streak-pill"><i aria-hidden="true"></i>${streakText(st)}</span>` : ""}
+        ${quiet ? `<span class="pill">Quiet hours until ${hourName(quietSet().to)}</span>` : ""}
+      </div>` : ""}
+    </header>
+    ${showReportOnHome() ? viewWeekReport("home") : ""}
     <section class="pane balance" aria-label="Today's budget">
       <div class="balance-top">
         ${gauge(left / goal, left, "min left", `${left} of ${goal} minutes left today`)}
-        <div class="balance-tx"><p class="kicker">Daily budget</p><b>${used} of ${goal} min used</b><small>Every visit you start here counts toward it.</small></div>
+        <div class="balance-tx"><p class="kicker">Daily budget</p><b>${used} of ${goal} min used</b><small>Every visit you start in OwnIt counts toward it.</small></div>
       </div>
       <ul class="stats four">
         <li>${ICONS.arrow}<b>${today.length}</b><span>${today.length === 1 ? "visit" : "visits"}</span></li>
@@ -1282,12 +1419,11 @@ function viewHome() {
     </section>
     ${viewRealToday(used, goal)}
     <section class="pane">
-      <div class="pane-head"><h2>Today</h2>${today.length ? `<button class="see-all" data-action="tab" data-tab="insights">See all</button>` : ""}</div>
+      <div class="pane-head"><h2>What happened today</h2>${today.length ? `<button class="see-all" data-action="tab" data-tab="insights">This week</button>` : ""}</div>
       ${today.length
-        ? `<ul class="tl">${today.slice(0, 4).map((v) => timeRow(v, fmtTime(v.started_at))).join("")}</ul>`
-        : `<p class="tl-empty">Nothing yet. Your first visit will show up here.</p>`}
-    </section>
-  </div>`;
+        ? `<ul class="tl">${today.map((v) => timeRow(v, fmtTime(v.started_at))).join("")}</ul>`
+        : `<p class="tl-empty">Nothing yet. Your first visit will show up here.</p><button class="btn btn-primary" data-action="tab" data-tab="home">Search for something${ICONS.arrowR}</button>`}
+    </section>`;
 }
 
 // ----- Scroll on purpose: a timed scroll without a search -----
@@ -1466,7 +1602,7 @@ function viewInsights() {
     </section>
     ${byPlatform.length > 1 ? `<section class="pane">
       <div class="pane-head"><h2>Where you went</h2></div>
-      <ul class="list">${byPlatform.map(([id, n]) => `<li><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span><div class="what"><b>${PLATFORMS[id].name}</b></div><span class="right">${n} ${n === 1 ? "visit" : "visits"}</span></li>`).join("")}</ul>
+      <ul class="list">${byPlatform.map(([id, n]) => `<li><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span><div class="what"><b>${esc(PLATFORMS[id].name)}</b></div><span class="right">${n} ${n === 1 ? "visit" : "visits"}</span></li>`).join("")}</ul>
     </section>` : ""}
     <section class="pane">
       <div class="pane-head"><h2>Every visit this week</h2></div>
@@ -1644,7 +1780,7 @@ function searchLink(platform, q) {
   const styles = LINK_STYLES[platform];
   const chosen = styles && store.get("ownit.link." + platform, null);
   const tpl = chosen && styles.find((x) => x[0] === chosen)?.[2];
-  return tpl ? fillLink(tpl, q) : PLATFORMS[platform].search(q);
+  return tpl ? fillLink(tpl, q) : (PLATFORMS[platform] || PLATFORMS.tiktok).search(q);
 }
 /** Opens the app on a visit. Newer app versions take the exact link; older ones build it themselves. */
 function appStartVisit(platform, kind, q, minutes, url) {
@@ -1696,6 +1832,43 @@ function choice(action, options, current, attr = "id") {
 }
 function permRow(ok, label, action) {
   return `<li class="${ok ? "ok" : "off"}"><span class="perm-dot">${ok ? ICONS.check : "!"}</span><span>${label}</span>${ok ? "<small>On</small>" : `<button class="btn btn-primary" data-action="${action}">Turn on</button>`}</li>`;
+}
+/** Settings → Your apps: the apps OwnIt works with, and adding more (Substack, X, your own…). */
+function viewAppsSection() {
+  const mine = Object.entries(PLATFORMS);
+  const free = Object.entries(APP_CATALOG).filter(([id]) => !PLATFORMS[id]);
+  let installed = [];
+  if (S.addApp && APP?.installedApps) { try { installed = JSON.parse(APP.installedApps()) || []; } catch { installed = []; } }
+  const add = S.addApp ? `<div class="set add-app">
+      <p class="add-app-h">Tap an app to add it:</p>
+      ${free.length ? `<div class="chips">${free.map(([id, d]) => `<button class="chip" data-action="app-add" data-id="${id}"><span class="pf-dot" style="background:${d.color}"></span>${esc(d.name)}</button>`).join("")}</div>` : ""}
+      <p class="add-app-h">Not in the list? Add it yourself:</p>
+      <label class="field"><span>Name of the app</span><input class="input" id="ca-name" data-keep maxlength="24" autocomplete="off" placeholder="For example: Medium"></label>
+      <label class="field"><span>Its website</span><input class="input" id="ca-site" data-keep inputmode="url" autocomplete="off" placeholder="medium.com"></label>
+      ${installed.length ? `<label class="field"><span>The app on this phone</span><select class="input" id="ca-pkg" data-keep><option value="">Choose it from the list</option>${installed.map((a) => `<option value="${esc(a.pkg)}">${esc(a.label)}</option>`).join("")}</select></label>` : ""}
+      ${S.addAppErr ? `<p class="field-error">${esc(S.addAppErr)}</p>` : ""}
+      <div class="btn-row"><button class="btn btn-primary" data-action="app-add-custom" ${S.busy ? "disabled" : ""}>Add this app</button><button class="btn btn-outline" data-action="app-add-close">Close</button></div>
+    </div>` : "";
+  return `
+    <section class="set-group"><h2>Your apps</h2><div class="set-card">
+      ${setting("apps", "Apps in OwnIt", "The apps you can search and scroll on purpose.", `<ul class="my-apps">${mine.map(([id, pf]) => `<li><span class="pf-dot" style="background:${pf.color}"></span><b>${esc(pf.name)}</b>${pf.extra ? `<button class="btn btn-outline btn-sm" data-action="app-remove" data-id="${esc(id)}">Remove</button>` : "<small>Built in</small>"}</li>`).join("")}</ul>
+        ${S.addApp ? "" : `<button class="btn btn-outline" data-action="app-add-open">${ICONS.plus || "+"} Add an app</button>`}
+        ${APP && !APP.setExtraApps ? `<p class="small-note">To guard the apps you add, <a href="${ANDROID_APK}">update the Android app</a> first.</p>` : ""}`,
+        ["Tap <b>Add an app</b>.", "Tap one of the apps in the list, like <b>Substack</b>, and it's added straight away.", "Is your app not there? Type its name and its website, then tap <b>Add this app</b>." + (APP ? " Pick it from the list of apps on this phone, so OwnIt can guard it." : ""), "The new app shows up on Home next to TikTok, so you can search it on purpose."])}
+      ${add}
+    </div></section>`;
+}
+async function saveApps(list, msg) {
+  withBusy(async () => {
+    S.profile = await S.api.saveProfile({ apps: list });
+    refreshPlatforms();
+    const g = store.get("ownit.guarded", null);
+    if (Array.isArray(g)) store.set("ownit.guarded", g.filter((x) => PLATFORMS[x]).concat(list.filter((x) => PLATFORMS[x]?.extra && PLATFORMS[x].pkgs?.length && !g.includes(x))));
+    syncGuardedApps();
+    if (!PLATFORMS[S.platform]) S.platform = userApps()[0];
+    S.addApp = false; S.addAppErr = null;
+    setTimeout(() => toast(msg), 0);
+  });
 }
 /** Hide Reels and Shorts (Android app 0.8+). */
 function viewShortsSetting(st) {
@@ -1778,7 +1951,7 @@ function viewSettings() {
 
   return `
     ${pageHead("Settings", "Tap “How?” next to any setting for step-by-step help.")}
-    ${lookSection}${visitSection}${guardSection}`;
+    ${viewAppsSection()}${lookSection}${visitSection}${guardSection}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1842,6 +2015,17 @@ function guideTopics() {
       "Your daily budget is the total time you want on social apps. Change it in <b>Settings</b>.",
       "The bar on <b>Home</b> shows how much is left today.",
       "<b>Insights</b> shows your week: how many visits were on purpose, and which days went over."]],
+    ["apps", "Add Substack or another app", "settings", [
+      "Open <b>Menu</b>, then <b>Settings</b>. The first group is <b>Your apps</b>.",
+      "Tap <b>Add an app</b>.",
+      "Tap the app you want, like <b>Substack</b>. It's added straight away.",
+      "Not in the list? Type its name and website, then tap <b>Add this app</b>.",
+      "Go to <b>Home</b>. The new app is next to TikTok, ready to search on purpose."]],
+    ["today", "See your day", "today", [
+      "Tap <b>Today</b> at the bottom of the screen.",
+      "The ring shows the minutes left in your daily budget.",
+      "Below it: your visits today, and on Android the time your phone counted in each app.",
+      "On Mondays you'll also find last week's report there."]],
     ["widget", "Add the OwnIt widget (Android)", null, [
       "Go to your phone's home screen. Touch and hold an empty spot, then tap <b>Widgets</b>.",
       "Find <b>OwnIt</b>, touch and hold it, and drag it where you want it.",
@@ -1860,6 +2044,7 @@ function guideTopics() {
 function viewGuide() {
   return `
     ${pageHead("Guide", "Tap a question to see the steps.")}
+    <button class="btn btn-outline tour-again" data-action="tour-start">Show me around again</button>
     <ul class="guide">${guideTopics().map(([id, title, page, steps]) => {
       const open = S.guide === id;
       return `<li class="${open ? "open" : ""}">
@@ -2055,6 +2240,8 @@ const LP_HOW = [
   ["Come back out", "When time's up, OwnIt calls you back and asks: did you find it?"],
 ];
 
+/** How much slower than the original the "How it works" phone plays (people need time to read). */
+const HOW_SLOW = 1.9;
 /** A small phone that acts out one visit: type, go, time's up, back out. */
 function lpHow() {
   const thumbs = ["#F28D7C", "#B9C7F5", "#F0C987", "#8FD3C1", "#C9A7F0", "#E7A6B8"];
@@ -2063,8 +2250,9 @@ function lpHow() {
     <p class="lp-kicker lp-how-kicker reveal">How it works</p>
     <div class="lp-how-copy">
       <ol class="lp-how-steps">
-        ${LP_HOW.map(([h], i) => `<li data-how="${i}" class="${i ? "" : "on"}" style="--dur:${[2.9, 3.5, 6.2][i]}s"><button type="button" class="lp-how-tab"><span class="lp-step-n">0${i + 1}</span><h3>${h}</h3></button><i class="lp-how-bar"></i></li>`).join("")}
+        ${LP_HOW.map(([h, d], i) => `<li data-how="${i}" class="${i ? "" : "on"}" style="--dur:${([2.89, 3.5, 6.6][i] * HOW_SLOW).toFixed(2)}s"><button type="button" class="lp-how-tab"><span class="lp-step-n">0${i + 1}</span><h3>${h}</h3></button><i class="lp-how-bar"></i><p>${esc(d)}</p></li>`).join("")}
       </ol>
+      <p class="lp-how-hint">Watch the phone. Tap a step to see it again.</p>
     </div>
     <div class="lp-how-phone reveal zoom" aria-hidden="true"><div class="hp-peek">${dotMini()}</div><div class="hp-body"><div class="hp-tilt">
       <div class="hp-screen">
@@ -2117,7 +2305,7 @@ function viewLanding() {
           <p class="lp-h-line">${words("of their life to scrolling.")}</p>
           <small class="lp-hero-src">About 141 minutes a day over 50 years (Statista, 2025)</small>
         </div>
-        <div class="lp-scroll-cue" aria-hidden="true"><span></span>Scroll</div>
+        <div class="lp-scroll-cue" aria-hidden="true"><span></span>Scroll down to start</div>
       </section>
     </div>
 
@@ -2142,6 +2330,7 @@ function viewLanding() {
             <div class="lp-qs-nav" aria-hidden="true"><b data-qs-n>01</b><div class="lp-qs-bar"><i></i></div><span>0${n}</span></div>
             <button type="button" class="sc-next"><span class="nx-a">Next</span><span class="nx-b">Continue</span>${ICONS.arrow}</button>
           </div>
+          <p class="sc-hint" aria-live="polite"><span class="h-a">Read it, then tap <b>Next</b> for the next one.</span><span class="h-b">That's the last one. Tap <b>Continue</b> to keep going.</span></p>
         </div>
       </div>
     </section>
@@ -2163,6 +2352,7 @@ function viewLanding() {
         </div>
       </div>
       <div class="lp-sec lp-steps-wrap">${lpHow()}</div>
+      <div class="lp-more" aria-hidden="true">Keep scrolling<i></i></div>
     </section>
 
     <section class="lp-sec lp-cta">
@@ -2247,6 +2437,7 @@ function initLanding() {
       qsOn = on;
       qsPin.dataset.scene = on;
       if (scNext) scNext.classList.toggle("last", on === n - 1);
+      qsPin.classList.toggle("last", on === n - 1);
       qsTexts.forEach((c, k) => { c.classList.toggle("on", k === on); c.setAttribute("aria-hidden", k === on ? "false" : "true"); });
       if (qsN) qsN.textContent = "0" + (on + 1);
     }
@@ -2386,7 +2577,7 @@ function initLanding() {
     const TEXT = "easy injera recipe";
     let timers = [];
     const stop = () => { timers.forEach(clearTimeout); timers = []; };
-    const at = (ms, fn) => timers.push(setTimeout(() => { if (ctl.alive) fn(); }, ms));
+    const at = (ms, fn) => timers.push(setTimeout(() => { if (ctl.alive) fn(); }, ms * HOW_SLOW));
     const setPhase = (ph) => {
       const step = ph < 2 ? 0 : ph < 3 ? 1 : 2;
       how.dataset.phase = ph; how.dataset.step = step;
@@ -2583,6 +2774,7 @@ function render() {
   if (S.phase === "app" && visitMode(openVisit()) === "active") ticker = setInterval(tick, 1000);
   if (S.phase === "app" && visitMode(openVisit()) === "active") tick();
   syncWidget();
+  placeTour();
 }
 
 // ---------------------------------------------------------------------------
@@ -2796,6 +2988,31 @@ const actions = {
   },
   "pause-cancel"() { S.pause = null; clearInterval(S.pauseTimer); render(); },
   "report-close"() { store.set("ownit.reportSeen", dayKey(startOfWeek())); render(); },
+  "tour-next"() { if (S.tour >= TOUR.length - 1) actions["tour-end"](); else { S.tour++; render(); } },
+  "tour-end"() { S.tour = null; store.set("ownit.tourDone", true); S.tab = "home"; render(); window.scrollTo({ top: 0 }); },
+  "tour-start"() { S.tour = 0; S.tab = "home"; render(); },
+  "app-add-open"() { S.addApp = true; S.addAppErr = null; render(); },
+  "app-add-close"() { S.addApp = false; S.addAppErr = null; render(); },
+  "app-add"(el) {
+    const id = el.dataset.id;
+    saveApps([...(S.profile?.apps || []).filter((x) => x !== id), id], `${APP_CATALOG[id].name} added. You'll find it on Home.`);
+  },
+  "app-add-custom"() {
+    const name = ($("#ca-name")?.value || "").replace(/[|,]/g, " ").replace(/\s+/g, " ").trim();
+    let site = ($("#ca-site")?.value || "").replace(/[|,\s]/g, "").trim();
+    const pkg = ($("#ca-pkg")?.value || "").replace(/[|]/g, "");
+    if (!name) { S.addAppErr = "Type the name of the app first."; render(); return; }
+    if (!/^https?:\/\//i.test(site)) site = "https://" + site;
+    let ok = false; try { ok = /\./.test(new URL(site).hostname); } catch { ok = false; }
+    if (!ok) { S.addAppErr = "That website doesn't look right. Try something like medium.com."; render(); return; }
+    if (Object.values(PLATFORMS).some((p) => p.name.toLowerCase() === name.toLowerCase())) { S.addAppErr = `${name} is already in your apps.`; render(); return; }
+    for (const id of ["ca-name", "ca-site", "ca-pkg"]) { const el = document.getElementById(id); if (el) el.value = ""; }
+    saveApps([...(S.profile?.apps || []), `c:${name}|${site}|${pkg}`], `${name} added. You'll find it on Home.`);
+  },
+  "app-remove"(el) {
+    const id = el.dataset.id, name = pfName(id);
+    saveApps((S.profile?.apps || []).filter((x) => x !== id), `${name} removed.`);
+  },
   "set-shorts"(el) { appCall("setHideShorts", el.dataset.id === "on"); render(); },
   "shorts-settings"() { appCall("openAccessibilitySettings"); },
   "set-breath"(el) { store.set("ownit.breath", el.dataset.id === "on"); render(); },
@@ -2996,7 +3213,7 @@ root.addEventListener("input", (e) => {
   if (e.target.id === "intent" && S.intentError) { S.intentError = false; render(); }
 });
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) { document.title = "OwnIt"; if (S.phase === "app") render(); }
+  if (!document.hidden) { document.title = "OwnIt"; if (S.phase === "app") { closeStaleVisits(); render(); } }
 });
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.addEventListener("message", (e) => {
@@ -3029,7 +3246,7 @@ window.ownitWidget = () => {
   S.moment = null; goTo("home");
   setTimeout(() => { const i = document.getElementById("intent"); i?.focus(); i?.scrollIntoView({ block: "center" }); }, 200);
 };
-window.ownitResume = () => { if (S.phase === "app") render(); };
+window.ownitResume = () => { if (S.phase === "app") { closeStaleVisits(); render(); } };
 /** A link shared to OwnIt from another app (Share → OwnIt). */
 window.ownitShare = (text) => {
   if (S.phase !== "app") { S.pendingShare = text; return; }
