@@ -521,8 +521,142 @@ function toast(text) {
 // ---------------------------------------------------------------------------
 // Data loading
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Batch 1: autopilot counter, streak, quiet hours, a breath before you go, weekly report
+// ---------------------------------------------------------------------------
+const HISTORY_DAYS = 60;
+const dayKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+/** Every time a guarded app was opened directly (caught by OwnIt Guard on Android), by day and app. Kept on this phone. */
+const Autopilot = {
+  all() { return store.get("ownit.autopilot", {}) || {}; },
+  add(platform) {
+    const a = this.all(), k = dayKey();
+    a[k] = a[k] || {};
+    a[k][platform] = (a[k][platform] || 0) + 1;
+    const cut = dayKey(addDays(new Date(), -HISTORY_DAYS));
+    for (const key of Object.keys(a)) if (key < cut) delete a[key];
+    store.set("ownit.autopilot", a);
+  },
+  on(day) { return Object.values(this.all()[dayKey(day)] || {}).reduce((s, n) => s + n, 0); },
+  between(from, days) { let n = 0; for (let i = 0; i < days; i++) n += this.on(addDays(from, i)); return n; },
+};
+function dayMinutes(day) {
+  const a = startOfDay(day).getTime(), b = addDays(startOfDay(day), 1).getTime();
+  return Math.round(S.visits.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b).reduce((s, v) => s + visitMinutes(v), 0));
+}
+/** Days in a row, up to today, that stayed within the daily budget. */
+function streak() {
+  const goal = S.profile?.daily_goal_minutes || 45;
+  const first = startOfDay(S.profile?.onboarded_at ? new Date(S.profile.onboarded_at) : new Date());
+  const loaded = startOfDay(addDays(new Date(), -(HISTORY_DAYS - 1)));
+  let n = 0, d = startOfDay(), more = false;
+  while (d >= first && dayMinutes(d) <= goal) {
+    if (d < loaded) { more = true; break; }
+    n++; d = addDays(d, -1);
+  }
+  return { days: n, more };
+}
+const streakText = (st) => `${st.days}${st.more ? "+" : ""} ${st.days === 1 && !st.more ? "day" : "days"} on purpose`;
+function quietSet() { return { on: false, from: 23, to: 6, ...(store.get("ownit.quiet", {}) || {}) }; }
+const hourName = (h) => (h === 0 ? "12 am" : h === 12 ? "12 pm" : h < 12 ? h + " am" : h - 12 + " pm");
+function inQuiet(now = new Date()) {
+  const q = quietSet(); if (!q.on) return false;
+  const h = now.getHours();
+  return q.from > q.to ? h >= q.from || h < q.to : h >= q.from && h < q.to;
+}
+const breathOn = () => store.get("ownit.breath", true) !== false;
+/** Totals for the seven days that start on `monday`. */
+function weekReport(monday) {
+  const a = monday.getTime(), b = addDays(monday, 7).getTime();
+  const goal = S.profile?.daily_goal_minutes || 45;
+  const vs = S.visits.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b);
+  const done = vs.filter((v) => v.outcome);
+  const found = done.filter((v) => v.outcome === "found").length;
+  const mins = Math.round(vs.reduce((s, v) => s + visitMinutes(v), 0));
+  let kept = 0; for (let i = 0; i < 7; i++) if (dayMinutes(addDays(monday, i)) <= goal) kept++;
+  return { visits: vs.length, mins, rate: done.length ? Math.round((found / done.length) * 100) : null, kept, auto: Autopilot.between(monday, 7) };
+}
+const fmtDay = (d) => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+function viewWeekReport(where) {
+  const lastMon = addDays(startOfWeek(), -7);
+  const r = weekReport(lastMon), before = weekReport(addDays(lastMon, -7));
+  if (!r.visits && !r.auto) return "";
+  const diff = r.mins - before.mins;
+  const change = before.visits ? (diff === 0 ? "The same time as the week before." : `${Math.abs(diff)} minutes ${diff < 0 ? "less" : "more"} than the week before.`) : "";
+  return `<section class="pane report">
+      <div class="pane-head"><div><p class="kicker">Weekly report</p><h2>${fmtDay(lastMon)} to ${fmtDay(addDays(lastMon, 6))}</h2></div>${where === "home" ? `<button class="see-all" data-action="report-close" aria-label="Close the weekly report">Close</button>` : ""}</div>
+      <ul class="stats four">
+        <li>${ICONS.clock}<b>${r.mins}</b><span>minutes</span></li>
+        <li>${ICONS.checkc}<b>${r.rate == null ? "–" : r.rate + "%"}</b><span>on purpose</span></li>
+        <li>${ICONS.target}<b>${r.kept}/7</b><span>days in budget</span></li>
+        <li>${ICONS.bolt}<b>${r.auto}</b><span>on autopilot</span></li>
+      </ul>
+      ${change ? `<p class="wk-note">${change}</p>` : ""}
+    </section>`;
+}
+function showReportOnHome() {
+  const dow = (new Date().getDay() + 6) % 7;   // Monday = 0
+  return dow <= 2 && store.get("ownit.reportSeen", "") !== dayKey(startOfWeek());
+}
+/** The pause before going in: a breath, or a longer wait during quiet hours. */
+function viewPause() {
+  const p = S.pause; if (!p) return "";
+  const pf = PLATFORMS[p.platform] || PLATFORMS.tiktok;
+  const left = Math.max(0, Math.ceil((p.until - Date.now()) / 1000));
+  const q = quietSet();
+  const href = p.kind === "free" ? pf.feed : searchLink(p.platform, p.q);
+  return `<div class="pause ${p.quiet ? "quiet" : "breathe"}" role="dialog" aria-modal="true" aria-labelledby="pause-t">
+    <div class="pause-in">
+      ${p.quiet
+        ? `<p class="kicker">Quiet hours until ${hourName(q.to)}</p><h2 id="pause-t">It's your quiet time.</h2><p class="pause-sub">If it can wait until morning, let it wait. If you really need it, OwnIt opens it in a moment.</p>`
+        : `<div class="breath" aria-hidden="true"><i></i></div><h2 id="pause-t" class="breath-word"><span>Breathe in</span><span>and out</span></h2>`}
+      <p class="pause-what">${p.kind === "free" ? `A ${p.mins}-minute scroll on ${esc(pf.name)}` : `${esc(p.q)} <i>·</i> ${esc(pf.name)} <i>·</i> ${p.mins} min`}</p>
+      <a class="btn btn-light pause-go" data-action="pause-go" href="${esc(href)}" target="_blank" rel="noopener" aria-disabled="${left > 0}">${left > 0 ? `<span class="pause-count">${left}</span>` : `Go to ${esc(pf.name)}${ICONS.arrowR}`}</a>
+      <button class="btn btn-ghost pause-no" data-action="pause-cancel">${p.quiet ? "OK, I'll wait" : "Not now"}</button>
+    </div>
+  </div>`;
+}
+function startPause(p) {
+  p.quiet = inQuiet();
+  if (!p.quiet && !breathOn()) return false;
+  p.until = Date.now() + (p.quiet ? 15000 : 4000);
+  S.pause = p; render();
+  clearInterval(S.pauseTimer);
+  S.pauseTimer = setInterval(() => {
+    if (!S.pause) { clearInterval(S.pauseTimer); return; }
+    const left = Math.max(0, Math.ceil((S.pause.until - Date.now()) / 1000));
+    const c = document.querySelector(".pause-count");
+    if (left > 0) { if (c) c.textContent = left; return; }
+    clearInterval(S.pauseTimer);
+    // Change only the button, so the breathing animation isn't restarted.
+    const go = document.querySelector(".pause-go");
+    if (!go) { render(); return; }
+    go.setAttribute("aria-disabled", "false");
+    go.innerHTML = `Go to ${esc((PLATFORMS[S.pause.platform] || PLATFORMS.tiktok).name)}${ICONS.arrowR}`;
+  }, 250);
+  return true;
+}
+/** Opens the app for a visit and starts its timer. `el`/`e` are the tapped link and its click, when there is one. */
+function launch(p, el, e) {
+  S.blocked = null; S.moment = null; S.intentError = false;
+  if (p.kind === "free") {
+    if (APP) { e?.preventDefault(); appCall("startVisit", p.platform, "free", "", p.mins); }
+    unlockAudio();
+    setTimeout(() => { S.showFree = false; startVisit("free", "", p.mins, "", p.platform); }, 0);
+    return;
+  }
+  if (APP) { e?.preventDefault(); appStartVisit(p.platform, "search", p.q, p.mins, searchLink(p.platform, p.q)); }
+  else {
+    if (el) el.href = searchLink(p.platform, p.q);   // the link opens the app at this address
+    unlockAudio();
+    navigator.clipboard?.writeText(p.q).catch(() => {});
+  }
+  setTimeout(() => { if ($("#intent")) $("#intent").value = ""; startVisit("search", p.q, p.mins, "", p.platform); }, 0);
+}
+
 async function loadUserData() {
-  const since = new Date(startOfWeek().getTime() - 7 * 86400000).toISOString();
+  const since = startOfDay(addDays(new Date(), -(HISTORY_DAYS - 1))).toISOString();
   const [profile, visits] = await Promise.all([S.api.getProfile(), S.api.listVisits(since)]);
   S.profile = profile;
   S.visits = visits || [];
@@ -942,6 +1076,7 @@ function viewApp() {
   else page = { saved: viewSaved, insights: viewInsights, menu: viewMenu, scroll: viewScroll, settings: viewSettings, guide: viewGuide, answers: viewAnswers, account: viewAccount }[S.tab]?.() ?? viewHome();
   if (S.draft) page += viewSaveSheet(mode === "active" ? v : null);
   page += viewMomentFull();
+  page += viewPause();
 
   const current = mode ? "home" : TABS.includes(S.tab) ? S.tab : "menu";
   const tabs = navItems().map(([id, label, icon]) => `<button data-action="tab" data-tab="${id}" ${current === id ? 'aria-current="page"' : ""}><span class="tab-ic">${icon}</span>${label}</button>`).join("");
@@ -1039,7 +1174,7 @@ function viewHome() {
   }
   const blocked = S.blocked && PLATFORMS[S.blocked] ? `
     <div class="blocked-card fade-in" role="alert">
-      <b>You opened ${esc(PLATFORMS[S.blocked].name)} directly.</b>
+      <b>You opened ${esc(PLATFORMS[S.blocked].name)} directly${Autopilot.on(new Date()) > 1 ? `, ${Autopilot.on(new Date())} times today` : ""}.</b>
       <span>Say what you're looking for first. OwnIt will take you straight to it.</span>
     </div>` : "";
   const goal = S.profile?.daily_goal_minutes || 45;
@@ -1049,6 +1184,9 @@ function viewHome() {
   const today = S.visits.filter((v) => ms(v.started_at) >= dayStart);
   const found = today.filter((v) => v.outcome === "found").length;
   const pulled = today.filter((v) => v.outcome === "distracted").length;
+  const auto = Autopilot.on(new Date());
+  const st = streak();
+  const quiet = inQuiet();
   const head = used >= goal ? "That's enough for today" : today.length ? "You're on track" : "Your day is yours";
   const sub = used >= goal ? `You've used your ${goal} minutes. Tomorrow starts fresh.`
     : today.length ? `${left} of your ${goal} minutes are still yours today.`
@@ -1060,7 +1198,12 @@ function viewHome() {
       <p class="hello">${greeting()}, ${esc(displayName())}</p>
       <h1 class="hi-title">${head}<i class="sun" aria-hidden="true"></i></h1>
       <p class="hi-sub">${sub}</p>
+      <div class="hi-pills">
+        ${st.days ? `<span class="pill streak-pill"><i aria-hidden="true"></i>${streakText(st)}</span>` : ""}
+        ${quiet ? `<span class="pill">Quiet hours until ${hourName(quietSet().to)}</span>` : ""}
+      </div>
     </header>
+    ${showReportOnHome() ? viewWeekReport("home") : ""}
     <form class="go feature" data-submit="go" novalidate>
       ${markArt()}
       <p class="kicker">Search on purpose</p>
@@ -1077,10 +1220,11 @@ function viewHome() {
         ${gauge(left / goal, left, "min left", `${left} of ${goal} minutes left today`)}
         <div class="balance-tx"><p class="kicker">Daily budget</p><b>${used} of ${goal} min used</b><small>Every visit you start here counts toward it.</small></div>
       </div>
-      <ul class="stats">
+      <ul class="stats four">
         <li>${ICONS.arrow}<b>${today.length}</b><span>${today.length === 1 ? "visit" : "visits"}</span></li>
         <li>${ICONS.checkc}<b>${found}</b><span>found it</span></li>
         <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+        <li>${ICONS.bolt}<b>${auto}</b><span>on autopilot</span></li>
       </ul>
     </section>
     <section class="pane">
@@ -1226,14 +1370,15 @@ function viewInsights() {
         <h2>Nothing to measure yet</h2>
         <p>Start a visit from Home and check in when you come back. Your week shows up here.</p>
         <button class="btn btn-primary" data-action="tab" data-tab="home">Go to Home${ICONS.arrowR}</button>
-      </section>`;
+      </section>
+      ${viewWeekReport("insights")}`;
   }
   const trend = lastRate != null && rate != null && rate !== lastRate ? ` ${rate > lastRate ? "Up" : "Down"} from ${lastRate}% last week.` : "";
   const dayStart = startOfDay().getTime();
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const when = (v) => (ms(v.started_at) >= dayStart ? fmtTime(v.started_at) : days[new Date(v.started_at).getDay()]);
   return `
-    <header class="page-head"><h1 class="page-title">Insights</h1><p class="page-sub">This week, Monday to today.</p></header>
+    <header class="page-head"><h1 class="page-title">Insights</h1><p class="page-sub">This week, Monday to today.</p>${streak().days ? `<div class="hi-pills"><span class="pill streak-pill"><i aria-hidden="true"></i>${streakText(streak())}</span></div>` : ""}</header>
     <section class="pane balance">
       <div class="balance-top">
         ${gauge(rate == null ? 0 : rate / 100, rate == null ? "–" : `<span data-count="${rate}">${rate}</span><i>%</i>`, "on purpose", rate == null ? "No check-ins yet" : `${rate} percent of visits on purpose`)}
@@ -1242,16 +1387,18 @@ function viewInsights() {
             : `<b>${found} of ${done.length} ${done.length === 1 ? "visit" : "visits"}</b><small>got you what you came for.${trend}</small>`}
         </div>
       </div>
-      <ul class="stats">
+      <ul class="stats four">
         <li>${ICONS.arrow}<b>${week.length}</b><span>${week.length === 1 ? "visit" : "visits"}</span></li>
         <li>${ICONS.clock}<b>${minutes}</b><span>minutes</span></li>
         <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+        <li>${ICONS.bolt}<b>${Autopilot.between(startOfWeek(), 7)}</b><span>on autopilot</span></li>
       </ul>
     </section>
     <section class="pane">
       <div class="pane-head"><h2>Minutes per day</h2></div>
       ${weekCard(week, goal)}
     </section>
+    ${viewWeekReport("insights")}
     <section class="pane">
       <div class="pane-head"><h2>How your visits went</h2></div>
       ${done.length ? `
@@ -1524,6 +1671,14 @@ function viewSettings() {
         ["This is the total time you want to spend on social apps each day.", "Every visit you start in OwnIt counts toward it.", "The bar on Home shows how much is left. Insights turns red on days you went over."])}
       ${setting("minutes", "Usual search time", "The time already selected when you open Home.", choice("default-minutes", SEARCH_MINUTES.map((m) => [m, m + " min"]), store.get("ownit.minutes", 5), "min"),
         ["Pick the time most of your searches need.", "You can still change it for a single visit on Home."])}
+      ${setting("breath", "A breath before you go", "A four-second pause before OwnIt opens the app.", toggle("set-breath", breathOn(), "A breath before you go"),
+        ["When this is on, tapping <b>Go</b> shows a breathing circle for four seconds.", "Then tap <b>Go to TikTok</b>, or <b>Not now</b> if you changed your mind.", "It is a small moment to check that you really want to go in."], true)}
+      ${setting("quiet", "Quiet hours", quietSet().on ? `From ${hourName(quietSet().from)} to ${hourName(quietSet().to)}, going in takes a 15-second wait.` : "A time of day when going in takes a 15-second wait.", toggle("set-quiet", quietSet().on, "Quiet hours"),
+        ["Switch it on and pick when your quiet time starts and ends.", "During quiet hours, tapping <b>Go</b> shows a 15-second wait before the app opens.", "Good for sleep: most people scroll most at night."], true)}
+      ${quietSet().on ? `<div class="set quiet-times">
+        <div class="pick"><span>From</span>${choice("quiet-from", [[21, "9 pm"], [22, "10 pm"], [23, "11 pm"], [0, "12 am"]], quietSet().from)}</div>
+        <div class="pick"><span>To</span>${choice("quiet-to", [[5, "5 am"], [6, "6 am"], [7, "7 am"], [8, "8 am"]], quietSet().to)}</div>
+      </div>` : ""}
     </div></section>`;
 
   const guardSection = APP ? `
@@ -2538,27 +2693,28 @@ const actions = {
   go(el, e) {
     const q = ($("#intent")?.value || "").trim();
     if (!q) { e.preventDefault(); S.intentError = true; render(); $("#intent")?.focus(); return; }
-    S.blocked = null; S.moment = null;
-    if (APP) {
-      e.preventDefault();
-      const mins = S.minutes;
-      appStartVisit(S.platform, "search", q, mins, searchLink(S.platform, q));
-      S.intentError = false;
-      setTimeout(() => { if ($("#intent")) $("#intent").value = ""; startVisit("search", q, mins); }, 0);
-      return;
-    }
-    el.href = searchLink(S.platform, q);  // the link opens TikTok with this address
-    unlockAudio();
-    navigator.clipboard?.writeText(q).catch(() => {});
-    S.intentError = false;
-    const mins = S.minutes;
-    setTimeout(() => { if ($("#intent")) $("#intent").value = ""; startVisit("search", q, mins); }, 0);
+    const p = { kind: "search", q, mins: S.minutes, platform: S.platform };
+    if (startPause(p)) { e.preventDefault(); return; }
+    launch(p, el, e);
   },
   "free-go"(el, e) {
-    S.blocked = null;
-    if (APP) { e.preventDefault(); appCall("startVisit", S.platform, "free", "", S.freeMinutes); }
-    unlockAudio(); const mins = S.freeMinutes; setTimeout(() => { S.showFree = false; startVisit("free", "", mins); }, 0);
+    const p = { kind: "free", q: "", mins: S.freeMinutes, platform: S.platform };
+    if (startPause(p)) { e.preventDefault(); return; }
+    launch(p, el, e);
   },
+  "pause-go"(el, e) {
+    const p = S.pause;
+    if (!p || p.until > Date.now()) { e.preventDefault(); return; }
+    S.pause = null;
+    launch(p, el, e);
+    render();
+  },
+  "pause-cancel"() { S.pause = null; clearInterval(S.pauseTimer); render(); },
+  "report-close"() { store.set("ownit.reportSeen", dayKey(startOfWeek())); render(); },
+  "set-breath"(el) { store.set("ownit.breath", el.dataset.id === "on"); render(); },
+  "set-quiet"(el) { store.set("ownit.quiet", { ...quietSet(), on: el.dataset.id === "on" }); render(); },
+  "quiet-from"(el) { store.set("ownit.quiet", { ...quietSet(), from: Number(el.dataset.id) }); render(); },
+  "quiet-to"(el) { store.set("ownit.quiet", { ...quietSet(), to: Number(el.dataset.id) }); render(); },
   reopen() {
     const v = openVisit(); if (!v) return;
     const left = ms(v.started_at) + v.planned_minutes * 60000 - Date.now();
@@ -2769,7 +2925,7 @@ window.ownitAuthCallback = (fragment) => {
   withBusy(async () => { await S.api.sessionFromLink(fragment); });
 };
 window.ownitBlocked = (platform) => {
-  if (PLATFORMS[platform]) { S.blocked = platform; S.platform = platform; }
+  if (PLATFORMS[platform]) { Autopilot.add(platform); S.blocked = platform; S.platform = platform; }
   if (S.phase !== "app") return;
   S.tab = "home"; render(); window.scrollTo({ top: 0 });
   setTimeout(() => $("#intent")?.focus(), 250);

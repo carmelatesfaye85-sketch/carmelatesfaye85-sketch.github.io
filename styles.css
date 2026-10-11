@@ -2231,3 +2231,43 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 .danger-zone .btn-danger { align-self: flex-start; }
 .btn-danger-solid { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 700; }
 .btn-danger-solid:hover:not([disabled]) { filter: brightness(1.06); }
+
+/* ---------- streak and quiet-hours pills ---------- */
+.hi-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.hi-pills:empty { display: none; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: var(--tint); font-size: 13px; font-weight: 600; color: var(--ink); }
+.streak-pill i { width: 10px; height: 10px; border-radius: 50%; background: var(--on); box-shadow: 0 0 0 3px color-mix(in srgb, var(--on) 22%, transparent); }
+.stats.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.stats.four b { font-size: 20px; }
+.stats.four span { font-size: 11.5px; line-height: 1.25; }
+.report .pane-head { align-items: flex-start; }
+.report .pane-head .kicker { margin-bottom: 4px; }
+.quiet-times { display: flex; flex-direction: column; gap: 10px; padding-top: 0; }
+.shell .set-card > .quiet-times { border-top: 0; }
+.quiet-times .pick > span { width: 40px; }
+
+/* ---------- the pause before going in ---------- */
+.pause { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; padding: 24px; background: var(--deep); color: var(--deep-ink); animation: mf-in .25s ease; }
+.pause-in { width: 100%; max-width: 380px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.pause .kicker { color: var(--deep-muted); }
+.pause h2 { font-size: 30px; font-weight: 600; line-height: 1.15; color: var(--deep-ink); }
+.pause-sub { margin: 0; font-size: 15.5px; color: var(--deep-muted); }
+.pause-what { max-width: 100%; margin: 6px 0 10px; padding: 9px 16px; border-radius: 999px; background: rgba(255, 255, 255, .08); font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.pause-what i { font-style: normal; opacity: .5; margin: 0 3px; }
+.shell .pause .pause-go { width: 100%; min-height: 56px; justify-content: center; font-size: 17px; }
+.pause-go[aria-disabled="true"] { opacity: .6; pointer-events: none; }
+.pause-count { font-size: 20px; font-variant-numeric: tabular-nums; }
+.shell .pause .pause-no { width: 100%; min-height: 50px; background: transparent; color: var(--deep-ink); border: 1.5px solid rgba(255, 255, 255, .22); box-shadow: none; }
+.breath { position: relative; width: 170px; height: 170px; margin-bottom: 6px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .18); }
+.breath i { position: absolute; inset: 0; border-radius: 50%; background: var(--deep-ink); transform: scale(.35); animation: breathe 4s ease-in-out forwards; }
+@keyframes breathe { 0% { transform: scale(.35); } 50% { transform: scale(1); } 100% { transform: scale(.35); } }
+.breath-word { position: relative; width: 100%; height: 1.25em; }
+.breath-word span { position: absolute; left: 0; right: 0; opacity: 0; animation: word-in 4s forwards; }
+.breath-word span:last-child { animation-name: word-out; }
+@keyframes word-in { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0; } }
+@keyframes word-out { 0%, 45% { opacity: 0; } 55%, 100% { opacity: 1; } }
+:root[data-motion="off"] .breath i { animation: none; transform: scale(.7); }
+:root[data-motion="off"] .breath-word span:first-child { animation: none; opacity: 1; }
+:root[data-motion="off"] .breath-word span:last-child { animation: none; opacity: 0; }
+.quiet-times .seg { flex-wrap: nowrap; gap: 6px; }
+.quiet-times .seg-btn { flex: 1 1 0; min-width: 0; padding: 9px 4px; font-size: 13.5px; }
