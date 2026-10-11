@@ -230,6 +230,7 @@ function friendlyError(msg) {
   if (/provider is not enabled/i.test(m)) return "Google sign-in isn't turned on yet for this site. Use email for now.";
   if (/failed to fetch|network/i.test(m)) return "Couldn't reach the server. Check your internet connection and try again.";
   if (/rate limit/i.test(m)) return "Too many tries. Wait a minute and try again.";
+  if (/delete_my_account/i.test(m)) return "Deleting accounts isn't switched on yet. Please try again later.";
   if (SIGNED_OUT_ERR.test(m)) return "You were signed out on this phone. Sign in again and your answers will still be here.";
   return m || "Something went wrong. Try again.";
 }
@@ -275,6 +276,7 @@ function createPreviewBackend() {
     async resetPassword() { /* nothing to send in preview mode */ },
     async updatePassword(pw) { mutateUser((u) => { u.password = pw; }); },
     async signOut() { const d = read(); d.session = null; write(d); emit("SIGNED_OUT"); },
+    async deleteAccount() { const d = read(); delete d.users[d.session]; d.session = null; write(d); emit("SIGNED_OUT"); },
     async getProfile() { return current()?.profile || null; },
     async saveProfile(p) { const u = mutateUser((x) => { x.profile = { ...(x.profile || {}), ...p }; }); return u.profile; },
     async listVisits(sinceIso) { return (current()?.visits || []).filter((v) => v.started_at >= sinceIso); },
@@ -370,6 +372,8 @@ async function createSupabaseBackend() {
     async resetPassword(email) { need(await sb.auth.resetPasswordForEmail(email, { redirectTo })); },
     async updatePassword(pw) { need(await sb.auth.updateUser({ password: pw })); },
     async signOut() { await sb.auth.signOut(); },
+    /** Deletes this account and everything in it (see supabase/5-delete-account.sql). */
+    async deleteAccount() { await live(); need(await sb.rpc("delete_my_account")); await sb.auth.signOut().catch(() => {}); },
     async getProfile() { return db(() => sb.from("profiles").select("*").eq("id", userId).maybeSingle()); },
     async saveProfile(p) { return db(() => sb.from("profiles").upsert({ id: userId, ...p }).select().single()); },
     async listVisits(sinceIso) {
@@ -1655,7 +1659,15 @@ function viewAccount() {
       <div><dt>Signed in with</dt><dd>${provider}</dd></div>
       ${APP ? `<div><dt>App version</dt><dd>${esc(appStatus().version || "")}</dd></div>` : ""}
     </dl>
-    <button class="btn btn-danger" data-action="signout">Sign out</button>`;
+    <button class="btn btn-outline" data-action="signout">Sign out</button>
+    <section class="danger-zone">
+      <h2>Delete my account</h2>
+      <p>This deletes your account, your answers, your visits and your saved videos for good. It can't be undone.</p>
+      ${S.confirmDelete ? `
+        <p class="danger-ask"><b>Are you sure?</b> Everything will be gone.</p>
+        <div class="btn-row"><button class="btn btn-danger-solid" data-action="delete-account" ${S.busy ? "disabled" : ""}>${S.busy ? "Deleting…" : "Yes, delete everything"}</button><button class="btn btn-outline" data-action="delete-cancel">Cancel</button></div>`
+        : `<button class="btn btn-danger" data-action="delete-ask">Delete my account</button>`}
+    </section>`;
 }
 
 
@@ -2654,6 +2666,15 @@ const actions = {
   "set-goal"(el) {
     const m = Number(el.dataset.min);
     withBusy(async () => { S.profile = await S.api.saveProfile({ daily_goal_minutes: m }); setTimeout(() => toast(`Daily budget set to ${m} minutes.`), 0); });
+  },
+  "delete-ask"() { S.confirmDelete = true; render(); },
+  "delete-cancel"() { S.confirmDelete = false; render(); },
+  "delete-account"() {
+    withBusy(async () => {
+      await S.api.deleteAccount();
+      for (const k of ["ownit.onbDraft", "ownit.minutes", "ownit.lastCat", "ownit.noApp", "ownit.batterySkip", "ownit.link.tiktok"]) store.set(k, null);
+      Object.assign(S, { user: null, profile: null, visits: [], saves: [], draft: null, confirmDelete: false, phase: "auth", authMode: "signup", authOpen: true, authMsg: { kind: "info", text: "Your account and everything in it were deleted." }, tab: "home", toast: null });
+    });
   },
   signout() {
     withBusy(async () => {

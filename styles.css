@@ -2222,3 +2222,12 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 .reality .tag-pill { background: var(--deep-ink); color: var(--deep); }
 .reality .card { border-radius: 26px; background: var(--card); box-shadow: var(--card-shadow); }
 .reality .insight-icon { border-radius: 50%; background: var(--tint-soft); color: var(--ink); }
+
+/* ---------- delete my account ---------- */
+.danger-zone { display: flex; flex-direction: column; gap: 10px; max-width: 640px; margin-top: 18px; padding: 20px; border-radius: 26px; background: var(--card); box-shadow: var(--card-shadow); }
+.danger-zone h2 { font-size: 18px; font-weight: 600; color: var(--warn); }
+.danger-zone p { margin: 0; font-size: 14.5px; color: var(--muted); }
+.danger-zone .danger-ask { color: var(--ink); }
+.danger-zone .btn-danger { align-self: flex-start; }
+.btn-danger-solid { background: var(--bad); color: #fff; border-color: var(--bad); font-weight: 700; }
+.btn-danger-solid:hover:not([disabled]) { filter: brightness(1.06); }
