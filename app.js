@@ -541,6 +541,59 @@ const Autopilot = {
   on(day) { return Object.values(this.all()[dayKey(day)] || {}).reduce((s, n) => s + n, 0); },
   between(from, days) { let n = 0; for (let i = 0; i < days; i++) n += this.on(addDays(from, i)); return n; },
 };
+/** Real minutes per app, measured by the Android phone (app 0.8+, needs Usage access). null when not available. */
+let realCache = { at: 0, days: null };
+function realUsage() {
+  if (!APP?.usage) return null;
+  if (Date.now() - realCache.at > 20000) {
+    let days = null;
+    try { const d = JSON.parse(APP.usage(7)); if (d.ok && Array.isArray(d.days)) days = d.days; } catch { /* old app */ }
+    realCache = { at: Date.now(), days };
+  }
+  return realCache.days;
+}
+const realTotal = (d) => Object.keys(PLATFORMS).reduce((s, id) => s + (Number(d?.[id]) || 0), 0);
+const realBar = (frac, over) => `<span class="real-bar${over ? " over" : ""}"><i style="--at:${Math.max(0.02, Math.min(1, frac)).toFixed(3)}"></i></span>`;
+/** Home: what the phone itself counted today, in and outside OwnIt. */
+function viewRealToday(used, goal) {
+  const days = realUsage(); if (!days?.length) return "";
+  const t = days[days.length - 1], total = realTotal(t);
+  const rows = Object.entries(PLATFORMS).filter(([id]) => t[id] > 0);
+  const outside = Math.max(0, total - used);
+  const note = !total ? "No time in TikTok, Instagram or YouTube yet today."
+    : outside > 2 ? `${outside} of those minutes were outside OwnIt.`
+    : "All of it went through OwnIt.";
+  return `<section class="pane real" aria-label="Real time in apps today">
+      <div class="pane-head"><div><p class="kicker">Counted by your phone</p><h2>${total} min in social apps today</h2></div></div>
+      ${rows.length ? `<ul class="real-list">${rows.map(([id, pf]) => `<li><span class="pf-dot" style="background:${pf.color}"></span><b>${pf.name}</b>${realBar(t[id] / Math.max(goal, total), false)}<span class="right">${t[id]} min</span></li>`).join("")}</ul>` : ""}
+      <p class="wk-note">${note}</p>
+    </section>`;
+}
+/** Insights: the phone's own count for each day this week. */
+function viewRealWeek(goal) {
+  const days = realUsage(); if (!days?.length) return "";
+  const from = dayKey(startOfWeek());
+  const week = days.filter((d) => d.day >= from);
+  const names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const sum = week.reduce((s, d) => s + realTotal(d), 0);
+  const top = Math.max(goal, ...week.map(realTotal));
+  return `<section class="pane real">
+      <div class="pane-head"><div><p class="kicker">Counted by your phone</p><h2>${sum} min this week</h2></div></div>
+      <ul class="real-list">${week.map((d) => { const n = realTotal(d), dt = new Date(d.day + "T12:00:00");
+        return `<li><b>${names[dt.getDay()]}</b>${realBar(n / top, n > goal)}<span class="right">${n} min</span></li>`; }).join("")}</ul>
+      <p class="wk-note">All time in TikTok, Instagram and YouTube on this phone, also when you didn't go through OwnIt. Red days went over your ${goal} minutes.</p>
+    </section>`;
+}
+/** Keeps the Android home screen widget in step with Home. */
+let widgetSent = "";
+function syncWidget() {
+  if (!APP?.setWidget || S.phase !== "app" || !S.profile) return;
+  const st = streak();
+  const data = JSON.stringify({ goal: S.profile.daily_goal_minutes || 45, used: todayMinutes(), streak: st.days ? streakText(st) : "" });
+  if (data === widgetSent) return;
+  widgetSent = data;
+  appCall("setWidget", data);
+}
 function dayMinutes(day) {
   const a = startOfDay(day).getTime(), b = addDays(startOfDay(day), 1).getTime();
   return Math.round(S.visits.filter((v) => ms(v.started_at) >= a && ms(v.started_at) < b).reduce((s, v) => s + visitMinutes(v), 0));
@@ -1227,6 +1280,7 @@ function viewHome() {
         <li>${ICONS.bolt}<b>${auto}</b><span>on autopilot</span></li>
       </ul>
     </section>
+    ${viewRealToday(used, goal)}
     <section class="pane">
       <div class="pane-head"><h2>Today</h2>${today.length ? `<button class="see-all" data-action="tab" data-tab="insights">See all</button>` : ""}</div>
       ${today.length
@@ -1371,6 +1425,7 @@ function viewInsights() {
         <p>Start a visit from Home and check in when you come back. Your week shows up here.</p>
         <button class="btn btn-primary" data-action="tab" data-tab="home">Go to Home${ICONS.arrowR}</button>
       </section>
+      ${viewRealWeek(S.profile?.daily_goal_minutes || 45)}
       ${viewWeekReport("insights")}`;
   }
   const trend = lastRate != null && rate != null && rate !== lastRate ? ` ${rate > lastRate ? "Up" : "Down"} from ${lastRate}% last week.` : "";
@@ -1398,6 +1453,7 @@ function viewInsights() {
       <div class="pane-head"><h2>Minutes per day</h2></div>
       ${weekCard(week, goal)}
     </section>
+    ${viewRealWeek(goal)}
     ${viewWeekReport("insights")}
     <section class="pane">
       <div class="pane-head"><h2>How your visits went</h2></div>
@@ -1641,6 +1697,21 @@ function choice(action, options, current, attr = "id") {
 function permRow(ok, label, action) {
   return `<li class="${ok ? "ok" : "off"}"><span class="perm-dot">${ok ? ICONS.check : "!"}</span><span>${label}</span>${ok ? "<small>On</small>" : `<button class="btn btn-primary" data-action="${action}">Turn on</button>`}</li>`;
 }
+/** Hide Reels and Shorts (Android app 0.8+). */
+function viewShortsSetting(st) {
+  if (!String(st.features || "").includes("shorts")) {
+    return st.version ? setting("update", "New in the Android app", "Hide Reels and Shorts, real time per app, and a home screen widget.", `<a class="btn btn-outline" href="${ANDROID_APK}">Update the app</a>`,
+      ["Tap <b>Update the app</b>. The new OwnIt.apk downloads.", "Open the file and tap <b>Update</b>. Your account and answers stay.", "If Play Protect shows a warning: tap <b>More details</b>, then <b>Install anyway</b>."]) : "";
+  }
+  const steps = `<div class="set shorts-setup">
+      <p><b>One more step.</b> Switch on <b>${esc("OwnIt: hide Reels and Shorts")}</b> in your phone's Accessibility settings.</p>
+      <button class="btn btn-primary" data-action="shorts-settings">Open Accessibility settings</button>
+      <p class="small-note">Can't switch it on, or it says <b>Restricted setting</b>? Tap <button class="link-btn" data-action="app-info">App info</button>, then <b>⋮</b> at the top right, then <b>Allow restricted settings</b>. Then try again.</p>
+    </div>`;
+  return setting("shorts", "Hide Reels and Shorts", st.hideShorts && st.shortsOn ? "On. Swiping to the next Reel or Short takes you back." : "Watch the one video you came for, not the endless feed.", toggle("set-shorts", !!st.hideShorts, "Hide Reels and Shorts"),
+    ["In Instagram and YouTube you can watch the Reel or Short you opened.", "When you swipe on to the next one, OwnIt takes you one step back.", "<b>Scroll on purpose</b> visits are left alone.", "Instagram and YouTube change their apps often, so this can stop working after one of their updates."], true)
+    + (st.hideShorts && !st.shortsOn ? steps : "");
+}
 function viewSettings() {
   const L = look();
   const goal = S.profile?.daily_goal_minutes || 45;
@@ -1694,6 +1765,9 @@ function viewSettings() {
         ["Tap an app to guard it or to stop guarding it. Guarded apps are filled in.", "A guarded app shows “Not so fast” if someone opens it directly, then returns to OwnIt.", "At least one app always stays guarded."])}
       ${setting("link", "Search link", store.get("ownit.link.tiktok", null) ? "Using the link style you tested on this phone." : "If TikTok opens without your search, test which link works.", `<button class="btn btn-outline" data-action="lt-open">Test search links</button>`,
         ["Tap <b>Test search links</b>.", "Tap <b>Try it</b> on a style. TikTok opens for one minute.", "Come back to OwnIt and answer: did TikTok show results for your search?", "Tap <b>Yes, use this</b> on the first style that works. OwnIt remembers it."])}
+      ${viewShortsSetting(st)}
+      ${String(st.features || "").includes("widget") ? setting("widget", "Home screen widget", "Your minutes left and a quick search, on your home screen.", "",
+        ["Go to your phone's home screen.", "Touch and hold an empty spot, then tap <b>Widgets</b>.", "Find <b>OwnIt</b>, touch and hold it, and drag it onto your home screen.", "Tap <b>What are you looking for?</b> on the widget to search straight away."]) : ""}
     </div></section>` : `
     <section class="set-group"><h2>Time's-up alerts</h2><div class="set-card">
       ${setting("webnotify", "Notifications", Notify.state() === "on" ? "On. OwnIt calls you back when time is up." : "Get a notification when your time is up.", notifyCard(false) || '<p class="set-ok">' + ICONS.check + " Notifications are on</p>",
@@ -1768,6 +1842,16 @@ function guideTopics() {
       "Your daily budget is the total time you want on social apps. Change it in <b>Settings</b>.",
       "The bar on <b>Home</b> shows how much is left today.",
       "<b>Insights</b> shows your week: how many visits were on purpose, and which days went over."]],
+    ["widget", "Add the OwnIt widget (Android)", null, [
+      "Go to your phone's home screen. Touch and hold an empty spot, then tap <b>Widgets</b>.",
+      "Find <b>OwnIt</b>, touch and hold it, and drag it where you want it.",
+      "It shows your minutes left today and your streak.",
+      "Tap <b>What are you looking for?</b> on it to search straight away."]],
+    ["shorts", "Hide Reels and Shorts (Android)", "settings", [
+      "Open <b>Settings</b> and switch on <b>Hide Reels and Shorts</b>.",
+      "Tap <b>Open Accessibility settings</b>, find <b>OwnIt: hide Reels and Shorts</b> and switch it on.",
+      "If it says <b>Restricted setting</b>: open App info for OwnIt, tap <b>⋮</b>, then <b>Allow restricted settings</b>, and try again.",
+      "Now you can watch the one Reel or Short you opened. Swiping to the next one takes you back."]],
     ["iphone", "Notifications on iPhone", null, [
       "Open OwnIt in <b>Safari</b>.", "Tap <b>Share</b>, then <b>Add to Home Screen</b>.",
       "Open OwnIt from the Home Screen icon.", "Go to <b>Settings</b> and tap <b>Turn on</b> under Notifications, then <b>Allow</b>."]],
@@ -2498,6 +2582,7 @@ function render() {
   clearInterval(ticker);
   if (S.phase === "app" && visitMode(openVisit()) === "active") ticker = setInterval(tick, 1000);
   if (S.phase === "app" && visitMode(openVisit()) === "active") tick();
+  syncWidget();
 }
 
 // ---------------------------------------------------------------------------
@@ -2711,6 +2796,8 @@ const actions = {
   },
   "pause-cancel"() { S.pause = null; clearInterval(S.pauseTimer); render(); },
   "report-close"() { store.set("ownit.reportSeen", dayKey(startOfWeek())); render(); },
+  "set-shorts"(el) { appCall("setHideShorts", el.dataset.id === "on"); render(); },
+  "shorts-settings"() { appCall("openAccessibilitySettings"); },
   "set-breath"(el) { store.set("ownit.breath", el.dataset.id === "on"); render(); },
   "set-quiet"(el) { store.set("ownit.quiet", { ...quietSet(), on: el.dataset.id === "on" }); render(); },
   "quiet-from"(el) { store.set("ownit.quiet", { ...quietSet(), from: Number(el.dataset.id) }); render(); },
@@ -2935,6 +3022,12 @@ window.ownitTimeUp = () => {
   const v = openVisit();
   if (v && !v.ended_at && visitMode(v) === "checkin") v.ended_at = new Date().toISOString();
   S.tab = "home"; render(); window.scrollTo({ top: 0 });
+};
+/** The widget's search button: open Home with the search box ready. */
+window.ownitWidget = () => {
+  if (S.phase !== "app") return;
+  S.moment = null; goTo("home");
+  setTimeout(() => { const i = document.getElementById("intent"); i?.focus(); i?.scrollIntoView({ block: "center" }); }, 200);
 };
 window.ownitResume = () => { if (S.phase === "app") render(); };
 /** A link shared to OwnIt from another app (Share → OwnIt). */

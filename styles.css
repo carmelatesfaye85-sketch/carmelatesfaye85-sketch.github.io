@@ -2271,3 +2271,18 @@ em, .visit .visit-intent, .checkin-q, .moment b, .moment-full h2, .cover-ph { fo
 :root[data-motion="off"] .breath-word span:last-child { animation: none; opacity: 0; }
 .quiet-times .seg { flex-wrap: nowrap; gap: 6px; }
 .quiet-times .seg-btn { flex: 1 1 0; min-width: 0; padding: 9px 4px; font-size: 13.5px; }
+
+/* ---------- batch 2: real time per app, Reels and Shorts ---------- */
+.real .pane-head .kicker { margin-bottom: 4px; }
+.real-list { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.real-list li { display: grid; grid-template-columns: auto 5.5em 1fr 4.2em; align-items: center; gap: 10px; font-size: 15px; }
+.real-list li:not(:has(.pf-dot)) { grid-template-columns: 3em 1fr 4.2em; }
+.real-list b { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.real-list .right { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.real-bar { display: block; height: 10px; border-radius: 999px; background: var(--tint-soft); overflow: hidden; }
+.real-bar i { display: block; height: 100%; width: calc(var(--at) * 100%); border-radius: inherit; background: var(--on); }
+.real-bar.over i { background: var(--warn); }
+.shorts-setup { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.shorts-setup p { margin: 0; font-size: 14.5px; color: var(--ink); }
+.shorts-setup .small-note { font-size: 13.5px; color: var(--muted); }
+.link-btn { padding: 0; border: 0; background: none; color: var(--ink); font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
