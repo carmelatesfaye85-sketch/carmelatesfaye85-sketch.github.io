@@ -1320,10 +1320,10 @@ function viewHome() {
   return `<div class="home">
     ${viewMoment()}
     <header class="hi">
-      <svg class="hi-wave" viewBox="0 0 200 160" aria-hidden="true"><path d="M200 18c-46 6-58 52-96 70-30 14-62 10-104 46v26h200z"/><path d="M200 70c-30 8-44 40-72 56-18 10-40 12-60 34h132z"/></svg>
+      <svg class="hi-wave" viewBox="0 0 200 160" aria-hidden="true"><circle class="w-sun" cx="128" cy="78" r="26"/><path class="w-1" d="M200 18c-46 6-58 52-96 70-30 14-62 10-104 46v26h200z"/><path class="w-2" d="M200 70c-30 8-44 40-72 56-18 10-40 12-60 34h132z"/></svg>
       <h1 class="hello">${greeting()}, ${esc(displayName())}<span class="hello-ic">${HOME_ICONS[new Date().getHours() < 5 || new Date().getHours() >= 18 ? "moon" : "sun"]}</span></h1>
-      <div class="mot" aria-label="${esc(head)}">
-        <div class="mot-track">${[head, ...MOTIVATIONS].map((t) => `<p class="hi-title mot-slide">${esc(t)}${HOME_ICONS.heart}</p>`).join("")}</div>
+      <div class="mot">
+        <div class="mot-track">${MOTIVATIONS.map((t) => `<p class="hi-title mot-slide">${esc(t)}${HOME_ICONS.heart}</p>`).join("")}</div>
       </div>
       <p class="hi-sub">${sub}</p>
     </header>

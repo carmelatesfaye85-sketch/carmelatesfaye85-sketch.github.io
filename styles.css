@@ -2404,3 +2404,26 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .go-spark.l::after { right: 0; bottom: 4px; transform: rotate(-35deg); }
 .go-spark.r::before { left: 0; top: 4px; transform: rotate(-35deg); }
 .go-spark.r::after { left: 0; bottom: 4px; transform: rotate(35deg); }
+
+/* ---------- Home: colours from the inspiration (light mode) ---------- */
+:root:not([data-mode="dark"]) .home {
+  --h-blue: #EDF1FB; --h-blue-2: #DDE5F7; --h-line: #D9E1F4; --h-spark: #7C93DC; --h-sun: #F2B632;
+}
+:root:not([data-mode="dark"]) .home .home-card.feature { background: #FFFFFF; box-shadow: 0 1px 2px rgba(18, 34, 74, .04), 0 18px 40px -22px rgba(18, 34, 74, .28); }
+:root:not([data-mode="dark"]) .home .go-badge { background: var(--h-blue); }
+:root:not([data-mode="dark"]) .home .home-card .search-box { background: var(--h-blue) !important; border-color: var(--h-line) !important; }
+:root:not([data-mode="dark"]) .home .home-card .search-box:focus-within { background: #FFFFFF !important; border-color: var(--ink) !important; }
+:root:not([data-mode="dark"]) .home .home-card .seg-btn { background: var(--h-blue); color: var(--ink); }
+:root:not([data-mode="dark"]) .home .home-card .seg-btn[aria-pressed="true"] { background: var(--ink); color: #FFFFFF; }
+:root:not([data-mode="dark"]) .home .app-ring { background: #FFFFFF; box-shadow: 0 0 0 1.5px var(--h-line), 0 4px 12px -6px rgba(18, 34, 74, .2); }
+:root:not([data-mode="dark"]) .home .app-icon[aria-pressed="true"] .app-ring { box-shadow: 0 0 0 3px var(--ink), 0 6px 16px -8px rgba(18, 34, 74, .45); }
+:root:not([data-mode="dark"]) .home .go-spark::before, :root:not([data-mode="dark"]) .home .go-spark::after { --s: var(--h-spark); }
+:root:not([data-mode="dark"]) .home .go-row .go-btn .ic-arrow { background: #FFFFFF; }
+:root:not([data-mode="dark"]) .home .hello-ic { color: var(--h-sun); }
+:root:not([data-mode="dark"]) .home .hi-wave .w-sun { fill: #FBE3B4; opacity: .7; }
+:root:not([data-mode="dark"]) .home .hi-wave .w-1 { fill: #E6EBF8; }
+:root:not([data-mode="dark"]) .home .hi-wave .w-2 { fill: #CFD9F1; }
+:root[data-mode="dark"] .home .hi-wave .w-sun { fill: none; }
+.hi-wave .w-sun { fill: none; }
+.hi-wave .w-1 { fill: color-mix(in srgb, var(--brand) 6%, transparent); }
+.hi-wave .w-2 { fill: color-mix(in srgb, var(--brand) 10%, transparent); }
