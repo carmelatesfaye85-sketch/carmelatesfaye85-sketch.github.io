@@ -2427,3 +2427,15 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .hi-wave .w-sun { fill: none; }
 .hi-wave .w-1 { fill: color-mix(in srgb, var(--brand) 6%, transparent); }
 .hi-wave .w-2 { fill: color-mix(in srgb, var(--brand) 10%, transparent); }
+
+/* ---------- Home: soft colour waves filling the space under the Go button ---------- */
+.home { position: relative; z-index: 1; }
+.home-floor { position: fixed; z-index: -1; left: 0; right: 0; bottom: 0; width: 100%; height: 42vh; pointer-events: none; }
+.home-floor .f-sun { fill: #FBE3B4; opacity: .55; }
+.home-floor .f-1 { fill: #EEF2FB; }
+.home-floor .f-2 { fill: #E1E8F8; }
+.home-floor .f-3 { fill: #D3DDF3; }
+:root[data-mode="dark"] .home-floor .f-sun { fill: none; }
+:root[data-mode="dark"] .home-floor .f-1 { fill: color-mix(in srgb, var(--brand) 6%, transparent); }
+:root[data-mode="dark"] .home-floor .f-2 { fill: color-mix(in srgb, var(--brand) 10%, transparent); }
+:root[data-mode="dark"] .home-floor .f-3 { fill: color-mix(in srgb, var(--brand) 14%, transparent); }
