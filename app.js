@@ -1296,7 +1296,7 @@ function viewHome() {
   for (const v of S.visits) {
     const k = (v.intent || "").toLowerCase();
     if (v.kind === "search" && v.intent && !v.saved_url && !seen.has(k)) { seen.add(k); recent.push(v); }
-    if (recent.length >= 3) break;
+    if (recent.length >= 6) break;
   }
   const blocked = S.blocked && PLATFORMS[S.blocked] ? `
     <div class="blocked-card fade-in" role="alert">
@@ -1320,21 +1320,70 @@ function viewHome() {
   return `<div class="home">
     ${viewMoment()}
     <header class="hi">
-      <p class="hello">${greeting()}, ${esc(displayName())}</p>
-      <h1 class="hi-title">${head}<i class="sun" aria-hidden="true"></i></h1>
+      <h1 class="hello">${greeting()}, ${esc(displayName())}</h1>
+      <div class="mot" aria-label="${esc(head)}">
+        <div class="mot-track">${[head, ...MOTIVATIONS].map((t) => `<p class="hi-title mot-slide">${esc(t)}<i class="sun" aria-hidden="true"></i></p>`).join("")}</div>
+      </div>
       <p class="hi-sub">${sub}</p>
     </header>
     <form class="go feature" data-submit="go" novalidate>
       <h2 id="go-q">What are you looking for?</h2>
-      <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="easy injera recipe" aria-labelledby="go-q"></label>
+      <div class="search-wrap">
+        <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="easy injera recipe" aria-labelledby="go-q" ${recent.length ? 'aria-controls="suggest" aria-expanded="false"' : ""}></label>
+        ${recent.length ? `<ul class="suggest" id="suggest" role="listbox" aria-label="Recent searches" hidden>${recent.map((v) => `<li><button type="button" role="option" data-action="reuse" data-q="${esc(v.intent)}">${ICONS.clock}<span>${esc(v.intent)}</span></button></li>`).join("")}</ul>` : ""}
+      </div>
       ${S.intentError ? '<p class="field-error">Type what you\'re looking for first.</p>' : ""}
-      ${recent.length ? `<div class="recent" aria-label="Recent searches">${recent.map((v) => `<button type="button" class="chip chip-soft" data-action="reuse" data-q="${esc(v.intent)}">${esc(v.intent)}</button>`).join("")}</div>` : ""}
       <div class="pick"><span>On</span>${appPicker()}</div>
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="Time you need">${SEARCH_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.minutes}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
       <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${esc(pf.name)}${ICONS.arrowR}</a>
     </form>
   </div>`;
 }
+
+// ----- Home: short lines that slide past under the greeting -----
+const MOTIVATIONS = [
+  "Own your scroll",
+  "Go in with a reason",
+  "Look up more than down",
+  "Your attention is yours",
+  "Less feed, more life",
+  "Find it, then come back",
+  "Small choices, big days",
+  "You decide when it ends",
+];
+let motI = 0, motTimer = null;
+/** Puts the slider where it was (a re-render shouldn't jump back to the first line), and keeps it moving. */
+function placeMot() {
+  const track = document.querySelector(".mot-track"); if (!track) return;
+  const n = track.children.length;
+  motI %= n;
+  track.style.transition = "none";
+  track.style.transform = `translateX(${-motI * 100}%)`;
+  if (motTimer || matchMedia("(prefers-reduced-motion: reduce)").matches || document.documentElement.dataset.motion === "off") return;
+  motTimer = setInterval(() => {
+    const t = document.querySelector(".mot-track");
+    if (!t) { clearInterval(motTimer); motTimer = null; return; }
+    if (document.hidden) return;
+    motI = (motI + 1) % t.children.length;
+    t.style.transition = motI === 0 ? "none" : "";
+    t.style.transform = `translateX(${-motI * 100}%)`;
+  }, 3800);
+}
+/** Recent searches drop down under the search box while it's being typed in, like a search engine. */
+function showSuggest(on) {
+  const list = document.getElementById("suggest"), input = document.getElementById("intent");
+  if (!list || !input) return;
+  const q = input.value.trim().toLowerCase();
+  let any = false;
+  for (const li of list.children) { const hit = !q || li.textContent.toLowerCase().includes(q); li.hidden = !hit; any ||= hit; }
+  list.hidden = !(on && any);
+  input.setAttribute("aria-expanded", String(!list.hidden));
+}
+document.addEventListener("focusin", (e) => { if (e.target.id === "intent") showSuggest(true); });
+document.addEventListener("focusout", (e) => { if (e.target.id === "intent") setTimeout(() => { if (document.activeElement?.id !== "intent") showSuggest(false); }, 150); });
+document.addEventListener("input", (e) => { if (e.target.id === "intent") showSuggest(true); });
+// Tapping a suggestion must not close the list before the tap lands.
+document.addEventListener("pointerdown", (e) => { if (e.target.closest?.(".suggest")) e.preventDefault(); });
 
 // ----- First-time tour: points at each part of the app, one at a time -----
 const TOUR = [
@@ -2777,6 +2826,7 @@ function render() {
   if (S.phase === "app" && visitMode(openVisit()) === "active") tick();
   syncWidget();
   placeTour();
+  placeMot();
 }
 
 // ---------------------------------------------------------------------------
@@ -2968,7 +3018,7 @@ const actions = {
   minutes(el) { S.minutes = Number(el.dataset.min); render(); },
   "free-minutes"(el) { S.freeMinutes = Number(el.dataset.min); render(); },
   "toggle-free"() { S.showFree = !S.showFree; render(); },
-  reuse(el) { const i = $("#intent"); i.value = el.dataset.q; S.intentError = false; i.focus(); },
+  reuse(el) { const i = $("#intent"); i.value = el.dataset.q; S.intentError = false; showSuggest(false); i.blur(); },
   go(el, e) {
     const q = ($("#intent")?.value || "").trim();
     if (!q) { e.preventDefault(); S.intentError = true; render(); $("#intent")?.focus(); return; }
