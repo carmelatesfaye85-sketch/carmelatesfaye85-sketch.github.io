@@ -1192,6 +1192,7 @@ function viewApp() {
   if (S.draft) page += viewSaveSheet(mode === "active" ? v : null);
   page += viewMomentFull();
   page += viewPause();
+  page += viewAppSheet();
   if (!mode && !setup) { maybeStartTour(); page += viewTour(); }
 
   const current = mode ? "home" : TABS.includes(S.tab) ? S.tab : "menu";
@@ -1208,7 +1209,6 @@ function viewApp() {
         </div>
       </aside>
       <div class="main">
-        <svg class="home-floor" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true"><path class="f-2" d="M0 130c60-26 120 6 190 14s130-30 210-14v130H0z"/><path class="f-3" d="M0 190c80-20 150 12 220 10s110-26 180-16v76H0z"/></svg>
         <header class="topbar">
           <span class="logo">${WORDMARK}</span>
           <button class="avatar me-btn" data-action="tab" data-tab="account" aria-label="Your account">${esc(initials(displayName(), S.user?.email))}</button>
@@ -1237,7 +1237,7 @@ function budgetLine() {
 /** The web address an app lives at, for its icon. */
 function pfHost(id) {
   const pf = PLATFORMS[id]; if (!pf) return "";
-  try { return new URL(pf.feed).hostname.replace(/^www\./, ""); } catch { return ""; }
+  try { const h = new URL(pf.feed).hostname.replace(/^www\./, ""); return h === "play.google.com" ? "" : h; } catch { return ""; }
 }
 /** The app's own icon (the small icon its website shows in browser tabs), with its first letter underneath in case it can't load. */
 function pfIcon(id) {
@@ -1396,7 +1396,13 @@ function showSuggest(on) {
 }
 document.addEventListener("focusin", (e) => { if (e.target.id === "intent") showSuggest(true); });
 document.addEventListener("focusout", (e) => { if (e.target.id === "intent") setTimeout(() => { if (document.activeElement?.id !== "intent") showSuggest(false); }, 150); });
-document.addEventListener("input", (e) => { if (e.target.id === "intent") showSuggest(true); });
+document.addEventListener("input", (e) => {
+  if (e.target.id === "intent") showSuggest(true);
+  if (e.target.id === "sheet-q") {
+    const q = e.target.value.toLowerCase(); S.appSheetQ = e.target.value;
+    for (const li of document.querySelectorAll(".sheet-list li")) { const b = li.querySelector(".sheet-app"); if (b) li.hidden = !!q && !b.dataset.label?.toLowerCase().includes(q); }
+  }
+});
 // Tapping a suggestion must not close the list before the tap lands.
 document.addEventListener("pointerdown", (e) => { if (e.target.closest?.(".suggest")) e.preventDefault(); });
 
@@ -1934,6 +1940,28 @@ async function saveApps(list, msg) {
     S.addApp = false; S.addAppErr = null;
     setTimeout(() => toast(msg), 0);
   });
+}
+/** The "+" on Home: the apps on this phone (Android app), or a short list of popular apps, to add in one tap. */
+function viewAppSheet() {
+  if (!S.appSheet) return "";
+  let phone = null;
+  if (APP?.installedApps) { try { phone = JSON.parse(APP.installedApps()) || []; } catch { phone = []; } }
+  const mine = new Set(Object.values(PLATFORMS).flatMap((p) => p.pkgs || []));
+  for (const [id] of Object.entries(PLATFORMS)) for (const pk of { tiktok: ["com.zhiliaoapp.musically", "com.ss.android.ugc.trill"], instagram: ["com.instagram.android"], youtube: ["com.google.android.youtube"] }[id] || []) mine.add(pk);
+  const q = (S.appSheetQ || "").toLowerCase();
+  const rows = phone
+    ? phone.filter((a) => !mine.has(a.pkg) && (!q || a.label.toLowerCase().includes(q))).map((a) => `<li><button type="button" class="sheet-app" data-action="sheet-add-phone" data-pkg="${esc(a.pkg)}" data-label="${esc(a.label)}"><span class="pf-icon" style="--c:${CUSTOM_COLORS[a.label.length % CUSTOM_COLORS.length]}"><b>${esc(a.label.slice(0, 1))}</b></span><span>${esc(a.label)}</span></button></li>`).join("")
+    : Object.entries(APP_CATALOG).filter(([id]) => !PLATFORMS[id]).map(([id, d]) => {
+        let host = ""; try { host = new URL(d.feed).hostname.replace(/^www\./, ""); } catch { /* none */ }
+        return `<li><button type="button" class="sheet-app" data-action="sheet-add" data-id="${id}"><span class="pf-icon" style="--c:${d.color}"><b>${esc(d.name.slice(0, 1))}</b>${host ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64" alt="" loading="lazy" onerror="this.remove()">` : ""}</span><span>${esc(d.name)}</span></button></li>`;
+      }).join("");
+  return `<div class="app-sheet-back" data-action="sheet-close"></div>
+  <div class="app-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-t">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <div class="sheet-head"><h2 id="sheet-t">${phone ? "Apps on your phone" : "Add an app"}</h2><button class="sheet-x" data-action="sheet-close" aria-label="Close">×</button></div>
+    ${phone ? `<label class="search-box sheet-search">${ICONS.search}<input id="sheet-q" autocomplete="off" placeholder="Find an app" value="${esc(S.appSheetQ || "")}"></label>` : ""}
+    <ul class="sheet-list">${rows || `<li class="sheet-empty">${phone ? "No other apps found." : "You've added them all."}</li>`}</ul>
+  </div>`;
 }
 /** Hide Reels and Shorts (Android app 0.8+). */
 function viewShortsSetting(st) {
@@ -3080,9 +3108,19 @@ const actions = {
   "tour-next"() { if (S.tour >= TOUR.length - 1) actions["tour-end"](); else { S.tour++; render(); } },
   "tour-end"() { S.tour = null; store.set("ownit.tourDone", true); S.tab = "home"; render(); window.scrollTo({ top: 0 }); },
   "tour-start"() { S.tour = 0; S.tab = "home"; render(); },
-  "app-add-go"() {
-    S.addApp = true; S.addAppErr = null; goTo("settings");
-    setTimeout(() => document.querySelector(".add-app")?.scrollIntoView({ block: "start", behavior: "smooth" }), 80);
+  "app-add-go"() { S.appSheet = true; S.appSheetQ = ""; render(); },
+  "sheet-close"() { S.appSheet = false; render(); },
+  "sheet-add"(el) {
+    const id = el.dataset.id;
+    S.appSheet = false; S.platform = id;
+    saveApps([...(S.profile?.apps || []).filter((x) => x !== id), id], `${APP_CATALOG[id].name} added.`);
+  },
+  "sheet-add-phone"(el) {
+    const pkg = el.dataset.pkg, label = el.dataset.label.replace(/[|,]/g, " ").trim();
+    const known = Object.entries(APP_CATALOG).find(([, d]) => d.pkgs.includes(pkg));
+    const id = known ? known[0] : `c:${label}|https://play.google.com/store/apps/details?id=${pkg}|${pkg}`;
+    S.appSheet = false; S.platform = id;
+    saveApps([...(S.profile?.apps || []).filter((x) => x !== id), id], `${label} added.`);
   },
   "app-add-open"() { S.addApp = true; S.addAppErr = null; render(); },
   "app-add-close"() { S.addApp = false; S.addAppErr = null; render(); },

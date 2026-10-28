@@ -2441,7 +2441,7 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 :root[data-mode="dark"] .home-floor .f-3 { fill: color-mix(in srgb, var(--brand) 14%, transparent); }
 
 /* ---------- Every page: the Home look (white cards, light blue, waves at the bottom) ---------- */
-.main { position: relative; isolation: isolate; }
+.main { position: static; }
 .home { z-index: auto; }
 :root[data-mode="light"][data-colour="navy"] .shell {
   --tint: #EDF1FB; --tint-soft: #EDF1FB; --tint-2: #C9D5F0;
@@ -2465,3 +2465,31 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .app-add .app-ring svg { width: 24px; height: 24px; }
 :root[data-mode="light"][data-colour="navy"] .home .app-add .app-ring { background: #EDF1FB; box-shadow: 0 0 0 1.5px #C9D5F0; }
 .add-app { scroll-margin-top: 90px; }
+
+/* ---------- apps sit in one row, and the "+" sheet ---------- */
+.app-icons { flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px; margin: -4px -2px; }
+.app-icons::-webkit-scrollbar { display: none; }
+.app-icon { flex: none; width: 60px; }
+.app-ring { width: 52px; height: 52px; }
+.app-ring .pf-icon { width: 30px; height: 30px; }
+.app-name { font-size: 12px; max-width: 60px; }
+.app-sheet-back { position: fixed; inset: 0; z-index: 200; background: rgba(10, 18, 42, .45); }
+.app-sheet { position: fixed; z-index: 201; left: 0; right: 0; bottom: 0; max-height: 78vh; display: flex; flex-direction: column; gap: 12px; padding: 10px 18px calc(18px + env(safe-area-inset-bottom, 0px)); border-radius: 28px 28px 0 0; background: var(--card); box-shadow: 0 -20px 50px -20px rgba(0, 0, 0, .4); }
+@media (min-width: 700px) { .app-sheet { left: 50%; right: auto; width: 480px; transform: translateX(-50%); } }
+.sheet-grab { align-self: center; width: 44px; height: 5px; border-radius: 3px; background: var(--hair); }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; }
+.sheet-head h2 { margin: 0; font-size: 20px; font-weight: 700; }
+.sheet-x { width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--tint-soft); font-size: 22px; line-height: 1; color: var(--ink); cursor: pointer; }
+.sheet-search { border-radius: 999px !important; }
+.sheet-search input { padding: 12px 0 !important; font-size: 16px !important; }
+.sheet-list { flex: 1; min-height: 0; overflow-y: auto; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.sheet-list li[hidden] { display: none; }
+.sheet-app { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 56px; padding: 0 8px; border: 0; border-radius: 16px; background: none; font: inherit; font-size: 16px; font-weight: 600; color: var(--ink); text-align: left; cursor: pointer; }
+.sheet-app:hover, .sheet-app:focus-visible { background: var(--tint-soft); }
+.sheet-app .pf-icon { width: 36px; height: 36px; flex: none; }
+.sheet-empty { padding: 16px 8px; color: var(--muted); }
+
+/* ---------- waves as the page background (no layers, so pop-ups stay on top) ---------- */
+.shell { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20260%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20fill%3D%22%23E1E8F8%22%20d%3D%22M0%20130c60-26%20120%206%20190%2014s130-30%20210-14v130H0z%22/%3E%3Cpath%20fill%3D%22%23D3DDF3%22%20d%3D%22M0%20190c80-20%20150%2012%20220%2010s110-26%20180-16v76H0z%22/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: bottom center; background-size: 100% 42vh; background-attachment: fixed; }
+:root[data-mode="dark"] .shell { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20260%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20fill%3D%22rgba%28242%2C239%2C230%2C0.05%29%22%20d%3D%22M0%20130c60-26%20120%206%20190%2014s130-30%20210-14v130H0z%22/%3E%3Cpath%20fill%3D%22rgba%28242%2C239%2C230%2C0.08%29%22%20d%3D%22M0%20190c80-20%20150%2012%20220%2010s110-26%20180-16v76H0z%22/%3E%3C/svg%3E"); }
+.sheet-search { background: var(--tint-soft) !important; border: 1.5px solid var(--hair) !important; }
