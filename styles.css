@@ -2363,3 +2363,44 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .suggest svg { flex: none; width: 18px; height: 18px; color: var(--muted); }
 .suggest span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .mot-track { transition: none; } }
+
+/* ---------- Home, new look: white search card, icon badge, app icons with names ---------- */
+.home .hi { position: relative; isolation: isolate; }
+.hi-wave { position: absolute; z-index: -1; right: 0; top: 18px; width: 170px; height: 140px; pointer-events: none; -webkit-mask-image: linear-gradient(to left, transparent, #000 45%); mask-image: linear-gradient(to left, transparent, #000 45%); }
+.hi-wave path:first-child { fill: color-mix(in srgb, var(--brand) 5%, transparent); }
+.hi-wave path:last-child { fill: color-mix(in srgb, var(--brand) 8%, transparent); }
+.hello-ic { display: inline-grid; place-items: center; width: 1.1em; height: 1.1em; margin-left: .3em; vertical-align: -.12em; color: var(--ink); }
+.hello-ic svg { width: 100%; height: 100%; }
+.mot-heart { display: inline-block; width: .7em; height: .7em; margin-left: .3em; vertical-align: -.02em; color: var(--ink); }
+.home-card.feature { background: var(--card); box-shadow: var(--card-shadow); gap: 16px; padding: 22px 18px 20px; }
+.go-head { display: flex; align-items: center; gap: 14px; }
+.go-badge { flex: none; display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: var(--tint-soft); color: var(--ink); }
+.go-badge svg { width: 26px; height: 26px; }
+.go-head > div { min-width: 0; }
+.home-card.feature h2 { margin: 0; font-size: clamp(18px, 5.2vw, 24px); white-space: nowrap; }
+.go-sub { margin: 3px 0 0; font-size: 14px; line-height: 1.35; color: var(--muted); }
+.home-card .search-box { background: var(--tint-soft) !important; border: 1.5px solid var(--hair) !important; border-radius: 999px !important; }
+.home-card .search-box:focus-within { border-color: var(--ink) !important; background: var(--card) !important; }
+.home-card .pick { align-items: flex-start; }
+.home-card .pick > span { padding-top: 14px; min-width: 2em; }
+.app-icons { gap: 14px; }
+.app-icon { display: flex; flex-direction: column; align-items: center; gap: 6px; width: auto; height: auto; padding: 0; border-radius: 0; background: none; box-shadow: none; }
+.app-ring { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1.5px var(--hair), 0 4px 12px -6px rgba(18, 34, 74, .25); transition: box-shadow .2s ease; }
+.app-icon[aria-pressed="true"] { box-shadow: none; }
+.app-icon[aria-pressed="true"] .app-ring { box-shadow: 0 0 0 3px var(--on), 0 6px 16px -8px rgba(18, 34, 74, .5); }
+.app-ring .pf-icon { width: 34px; height: 34px; border-radius: 10px; }
+.app-name { font-size: 13px; font-weight: 500; color: var(--muted); max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-icon[aria-pressed="true"] .app-name { color: var(--ink); font-weight: 700; }
+.home-card .seg-btn { background: var(--tint-soft); border-radius: 999px; }
+.go-row { position: relative; display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.go-row .go-btn { flex: 1; margin: 0; border-radius: 999px; justify-content: flex-start; gap: 12px; }
+.go-plane { display: grid; place-items: center; width: 26px; height: 26px; }
+.go-plane svg { width: 24px; height: 24px; }
+.go-row .go-btn .go-label { flex: 1; text-align: left; }
+.go-spark { flex: none; position: relative; width: 14px; height: 30px; }
+.go-spark::before, .go-spark::after, .go-spark { --s: color-mix(in srgb, var(--brand) 45%, transparent); }
+.go-spark::before, .go-spark::after { content: ""; position: absolute; width: 10px; height: 2.5px; border-radius: 2px; background: var(--s); }
+.go-spark.l::before { right: 0; top: 4px; transform: rotate(35deg); }
+.go-spark.l::after { right: 0; bottom: 4px; transform: rotate(-35deg); }
+.go-spark.r::before { left: 0; top: 4px; transform: rotate(-35deg); }
+.go-spark.r::after { left: 0; bottom: 4px; transform: rotate(35deg); }

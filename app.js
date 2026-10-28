@@ -128,7 +128,7 @@ const ICONS = {
   logo: '<svg width="22" height="22" viewBox="186 268 652 488" fill="none" aria-hidden="true"><g stroke="currentColor" stroke-width="83" stroke-linecap="round"><path d="M430 351A161 161 0 1 0 591 505"/><path d="M756 351V673"/></g><circle cx="544" cy="398" r="46" fill="currentColor"/></svg>',
   search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
   arrow: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>',
-  today: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a9 9 0 1 1-8.5 6"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>',
+  today: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>',
   home: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>',
   chart: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   user: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>',
@@ -1245,7 +1245,7 @@ function pfIcon(id) {
 }
 function appPicker() {
   return `<div class="app-icons" role="group" aria-label="App">
-    ${userApps().map((id) => `<button type="button" class="app-icon" aria-pressed="${id === S.platform}" aria-label="${esc(PLATFORMS[id].name)}" title="${esc(PLATFORMS[id].name)}" data-action="platform" data-id="${id}">${pfIcon(id)}</button>`).join("")}
+    ${userApps().map((id) => `<button type="button" class="app-icon" aria-pressed="${id === S.platform}" data-action="platform" data-id="${id}"><span class="app-ring">${pfIcon(id)}</span><span class="app-name">${esc(PLATFORMS[id].name)}</span></button>`).join("")}
   </div>`;
 }
 function viewMomentFull() {
@@ -1320,25 +1320,41 @@ function viewHome() {
   return `<div class="home">
     ${viewMoment()}
     <header class="hi">
-      <h1 class="hello">${greeting()}, ${esc(displayName())}</h1>
+      <svg class="hi-wave" viewBox="0 0 200 160" aria-hidden="true"><path d="M200 18c-46 6-58 52-96 70-30 14-62 10-104 46v26h200z"/><path d="M200 70c-30 8-44 40-72 56-18 10-40 12-60 34h132z"/></svg>
+      <h1 class="hello">${greeting()}, ${esc(displayName())}<span class="hello-ic">${HOME_ICONS[new Date().getHours() < 5 || new Date().getHours() >= 18 ? "moon" : "sun"]}</span></h1>
       <div class="mot" aria-label="${esc(head)}">
-        <div class="mot-track">${[head, ...MOTIVATIONS].map((t) => `<p class="hi-title mot-slide">${esc(t)}<i class="sun" aria-hidden="true"></i></p>`).join("")}</div>
+        <div class="mot-track">${[head, ...MOTIVATIONS].map((t) => `<p class="hi-title mot-slide">${esc(t)}${HOME_ICONS.heart}</p>`).join("")}</div>
       </div>
       <p class="hi-sub">${sub}</p>
     </header>
-    <form class="go feature" data-submit="go" novalidate>
-      <h2 id="go-q">What are you looking for?</h2>
+    <form class="go feature home-card" data-submit="go" novalidate>
+      <div class="go-head">
+        <span class="go-badge" aria-hidden="true">${HOME_ICONS.binoculars}</span>
+        <div><h2 id="go-q">What are you looking for?</h2><p class="go-sub">Search for a recipe, video, idea, or anything…</p></div>
+      </div>
       <div class="search-wrap">
-        <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="easy injera recipe" aria-labelledby="go-q" ${recent.length ? 'aria-controls="suggest" aria-expanded="false"' : ""}></label>
+        <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="e.g. easy injera recipe" aria-labelledby="go-q" ${recent.length ? 'aria-controls="suggest" aria-expanded="false"' : ""}></label>
         ${recent.length ? `<ul class="suggest" id="suggest" role="listbox" aria-label="Recent searches" hidden>${recent.map((v) => `<li><button type="button" role="option" data-action="reuse" data-q="${esc(v.intent)}">${ICONS.clock}<span>${esc(v.intent)}</span></button></li>`).join("")}</ul>` : ""}
       </div>
       ${S.intentError ? '<p class="field-error">Type what you\'re looking for first.</p>' : ""}
       <div class="pick"><span>On</span>${appPicker()}</div>
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="Time you need">${SEARCH_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.minutes}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
-      <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${esc(pf.name)}${ICONS.arrowR}</a>
+      <div class="go-row">
+        <i class="go-spark l" aria-hidden="true"></i>
+        <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener"><span class="go-plane" aria-hidden="true">${HOME_ICONS.plane}</span><span class="go-label">Go to ${esc(pf.name)}</span>${ICONS.arrowR}</a>
+        <i class="go-spark r" aria-hidden="true"></i>
+      </div>
     </form>
   </div>`;
 }
+/** Small line icons used on Home. */
+const HOME_ICONS = {
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+  heart: '<svg class="mot-heart" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>',
+  binoculars: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6.5" cy="15.5" r="3.5"/><circle cx="17.5" cy="15.5" r="3.5"/><path d="M10 15.5h4M3 15l2.2-8.2A2 2 0 0 1 7.1 5.3h.4a2 2 0 0 1 2 2V12M21 15l-2.2-8.2a2 2 0 0 0-1.9-1.5h-.4a2 2 0 0 0-2 2V12"/></svg>',
+  plane: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3 3 10.5l7 2.5 2.5 7z"/><path d="m21 3-11 10"/></svg>',
+};
 
 // ----- Home: short lines that slide past under the greeting -----
 const MOTIVATIONS = [
