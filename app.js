@@ -1330,7 +1330,7 @@ function viewHome() {
     <form class="go feature home-card" data-submit="go" novalidate>
       <div class="go-head">
         <span class="go-badge" aria-hidden="true">${HOME_ICONS.binoculars}</span>
-        <div><h2 id="go-q">What are you looking for?</h2><p class="go-sub">Search for a recipe, video, idea, or anything…</p></div>
+        <div><h2 id="go-q">What are you looking for?</h2></div>
       </div>
       <div class="search-wrap">
         <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="e.g. easy injera recipe" aria-labelledby="go-q" ${recent.length ? 'aria-controls="suggest" aria-expanded="false"' : ""}></label>
