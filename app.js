@@ -2394,7 +2394,7 @@ function viewLanding() {
             <div class="lp-qs-nav" aria-hidden="true"><b data-qs-n>01</b><div class="lp-qs-bar"><i></i></div><span>0${n}</span></div>
             <button type="button" class="sc-next"><span class="nx-a">Next</span><span class="nx-b">Continue</span>${ICONS.arrow}</button>
           </div>
-          <p class="sc-hint" aria-live="polite"><span class="h-a">Read it, then tap <b>Next</b> for the next one.</span><span class="h-b">That's the last one. Tap <b>Continue</b> to keep going.</span></p>
+          <p class="sc-hint" aria-live="polite"><span class="h-a">Read it, then tap <b>Next</b> for the next one.</span><span class="h-b">That's the last one. Tap <b>Continue</b> or scroll down to keep going.</span></p>
         </div>
       </div>
     </section>
@@ -2529,6 +2529,29 @@ function initLanding() {
     scNext.addEventListener("click", goNext);
     ctl.cleanups.push(() => scNext.removeEventListener("click", goNext));
     drawScene(0);
+
+    // The page stops at the questions. Scrolling on only works once the last question is showing,
+    // so nobody scrolls past them without reading.
+    let unlocked = false;
+    const lockY = () => qsPin.getBoundingClientRect().top + (window.scrollY || 0);
+    const atLock = () => (window.scrollY || 0) >= lockY() - 2;
+    const unlockIfDone = () => { if (!unlocked && scene >= qsTexts.length - 1) { unlocked = true; root.classList.add("qs-done"); } };
+    const clamp = () => { unlockIfDone(); if (unlocked || !ctl.alive) return; const y = lockY(); if ((window.scrollY || 0) > y + 1) window.scrollTo(0, y); };
+    const onWheel = (e) => { unlockIfDone(); if (!unlocked && e.deltaY > 0 && atLock()) e.preventDefault(); };
+    let touchY = null;
+    const onTouchStart = (e) => { touchY = e.touches[0]?.clientY ?? null; };
+    const onTouchMove = (e) => { unlockIfDone(); const y = e.touches[0]?.clientY; if (!unlocked && touchY != null && y != null && y < touchY && atLock()) e.preventDefault(); };
+    const onKey = (e) => { unlockIfDone(); if (!unlocked && atLock() && [" ", "PageDown", "ArrowDown", "End"].includes(e.key) && !e.target.closest?.("input, textarea, button")) e.preventDefault(); };
+    window.addEventListener("scroll", clamp, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: false });
+    window.addEventListener("keydown", onKey);
+    ctl.cleanups.push(() => {
+      window.removeEventListener("scroll", clamp); window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart); window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("keydown", onKey);
+    });
   }
   const howPhone = root.querySelector(".lp-how-phone");
   const measure = () => {
