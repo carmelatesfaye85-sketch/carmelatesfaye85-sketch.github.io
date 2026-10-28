@@ -2190,7 +2190,7 @@ const LP_QUESTIONS = [
   { title: "Ever open TikTok for one video and look up three hours later?", body: "You only meant to check one thing. The clock kept moving. You didn't.", art: "clock" },
   { title: "Is it getting harder to stay focused on one thing?", body: "A page of a book, a lecture, a conversation. Your hand drifts to your phone before you even notice.", art: "focus" },
   { title: "Do other people's best moments make your own life feel smaller?", body: "Everyone else seems to be traveling, winning and glowing. You're comparing your ordinary Tuesday to their highlight reel.", art: "compare" },
-  { title: "You take in more information than ever. So why don't you feel any smarter?", body: "Hundreds of posts a day, and by tonight you won't remember most of them. A lot comes in. Very little stays.", art: "overload" },
+  { title: "You take in more information than ever, but you don't feel any smarter.", body: "Hundreds of posts a day, and by tonight you won't remember most of them. A lot comes in. Very little stays.", art: "overload" },
   { title: "Do you pick up your phone without even knowing why?", body: "No notification. No reason. Just a habit your thumb learned on its own.", art: "unlock" },
   { title: "Is your phone taking a seat at the family table?", body: "Everyone's together, but everyone's somewhere else. The people who matter most get what's left of your attention.", art: "table" },
 ];
