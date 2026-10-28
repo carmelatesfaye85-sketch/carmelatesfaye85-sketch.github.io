@@ -786,6 +786,8 @@ async function loadUserData() {
   S.visits = visits || [];
   refreshPlatforms();
   closeStaleVisits();
+  // "Stay on what you came for" is on unless the person switched it off themselves.
+  if (APP && !store.get("ownit.shortsChosen", false)) { const st = appStatus(); if (String(st.features || "").includes("stay") && !st.hideShorts) appCall("setHideShorts", true); }
   if (!S.platform || !PLATFORMS[S.platform]) S.platform = userApps()[0];
   syncGuardedApps();
   if (APP && S.user && !S.user.hasApp) { S.user.hasApp = true; S.api.markHasApp().catch(() => {}); }
@@ -1095,6 +1097,8 @@ function setupSteps(st) {
     steps.push({ id: "overlay", done: !!st.overlayOn });
     steps.push({ id: "usage", done: !!st.usageOn });
     if (st.batteryOn !== undefined) steps.push({ id: "battery", done: !!st.batteryOn || store.get("ownit.batterySkip", false) });
+    // App 0.11+: keep the feed closed (one switch in Accessibility; Android doesn't let apps turn it on themselves).
+    if (String(st.features || "").includes("stay")) steps.push({ id: "stay", done: !!st.shortsOn || store.get("ownit.staySkip", false) });
     return steps;
   }
   if (st.restrictedSettings) steps.push({ id: "restricted", done: (st.guardOn || SETUP.restrictedDone) && !SETUP.back });
@@ -1147,6 +1151,13 @@ function viewSetup(steps) {
       note: `<button class="quiet-link" data-action="battery-skip">My phone doesn't ask anything</button>`,
       btn: ["Keep OwnIt running", "battery-settings"],
     },
+    stay: {
+      title: "Keep the feed closed",
+      why: `During a search, OwnIt keeps you on your results. If ${pf}'s For You page opens, it takes you back. Reels and Shorts play one at a time.`,
+      how: ["Tap the button below. <b>Accessibility</b> opens.", "Tap <b>Installed apps</b> (or <b>Downloaded apps</b>).", "Tap <b>OwnIt: stay on what you came for</b>, switch it on, then tap <b>Allow</b>.", "OwnIt brings you back here by itself."],
+      note: `<span>Is the switch greyed out or “restricted”? Tap <button class="quiet-link inline" data-action="app-info">App info</button>, then <b>⋮</b> at the top right, then <b>Allow restricted settings</b>, and try again.</span><br><button class="quiet-link" data-action="stay-skip">Skip for now</button>`,
+      btn: ["Open Accessibility", "shorts-settings"],
+    },
     guard: {
       title: "Turn on OwnIt Guard",
       why: `This is what stops ${pf} from opening without a plan, and pulls you out when time's up. OwnIt only sees which app is open, never what's on your screen.`,
@@ -1165,7 +1176,7 @@ function viewSetup(steps) {
       <div class="onb-body fade-in" data-step="${cur}">
         <p class="eyebrow">Set up OwnIt on this phone</p>
         <ol class="setup-list" aria-label="Setup steps">
-          ${steps.map((x, k) => `<li class="${x.done ? "done" : k === i ? "now" : ""}"><span class="dot">${x.done ? ICONS.check : k + 1}</span>${esc({ notify: "Notifications", restricted: "Unlock the switch", guard: "OwnIt Guard", overlay: "Show on top", usage: "Usage access", battery: "Stay awake" }[x.id])}</li>`).join("")}
+          ${steps.map((x, k) => `<li class="${x.done ? "done" : k === i ? "now" : ""}"><span class="dot">${x.done ? ICONS.check : k + 1}</span>${esc({ notify: "Notifications", restricted: "Unlock the switch", guard: "OwnIt Guard", overlay: "Show on top", usage: "Usage access", battery: "Stay awake", stay: "Feed closed" }[x.id])}</li>`).join("")}
         </ol>
         <h1 class="onb-title">${C.title}</h1>
         <p class="onb-sub">${esc(C.why)}</p>
@@ -3079,6 +3090,7 @@ const actions = {
     store.set("ownit.guarded", list); syncGuardedApps(); render();
   },
   "battery-settings"() { appCall("openBatterySettings"); },
+  "stay-skip"() { store.set("ownit.staySkip", true); render(); },
   "battery-skip"() { store.set("ownit.batterySkip", true); render(); },
   "no-app"() { store.set("ownit.noApp", true); render(); },
 
@@ -3197,7 +3209,7 @@ const actions = {
     const id = el.dataset.id, name = pfName(id);
     saveApps((S.profile?.apps || []).filter((x) => x !== id), `${name} removed.`);
   },
-  "set-shorts"(el) { appCall("setHideShorts", el.dataset.id === "on"); render(); },
+  "set-shorts"(el) { store.set("ownit.shortsChosen", true); appCall("setHideShorts", el.dataset.id === "on"); render(); },
   "shorts-settings"() { appCall("openAccessibilitySettings"); },
   "set-breath"(el) { store.set("ownit.breath", el.dataset.id === "on"); render(); },
   "set-quiet"(el) { store.set("ownit.quiet", { ...quietSet(), on: el.dataset.id === "on" }); render(); },

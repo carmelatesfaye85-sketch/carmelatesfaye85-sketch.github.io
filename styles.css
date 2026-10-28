@@ -2504,3 +2504,4 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .player-msg span { color: #A3AECF; font-size: 14.5px; }
 .player-note { margin: 0; text-align: center; font-size: 13px; color: #A3AECF; }
 .player .spinner { border-color: rgba(242, 239, 230, .2); border-top-color: #F2EFE6; }
+.quiet-link.inline { display: inline; padding: 0; text-decoration: underline; }
