@@ -1233,9 +1233,19 @@ function budgetLine() {
     <span>${left > 0 ? `<b>${left} min</b> left today` : "<b>Budget used</b> for today"}</span>
   </div>`;
 }
+/** The web address an app lives at, for its icon. */
+function pfHost(id) {
+  const pf = PLATFORMS[id]; if (!pf) return "";
+  try { return new URL(pf.feed).hostname.replace(/^www\./, ""); } catch { return ""; }
+}
+/** The app's own icon (the small icon its website shows in browser tabs), with its first letter underneath in case it can't load. */
+function pfIcon(id) {
+  const pf = PLATFORMS[id], host = pfHost(id);
+  return `<span class="pf-icon" style="--c:${pf.color}" aria-hidden="true"><b>${esc(pf.name.slice(0, 1))}</b>${host ? `<img src="https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=64" alt="" loading="lazy" onerror="this.remove()">` : ""}</span>`;
+}
 function appPicker() {
-  return `<div class="seg" role="group" aria-label="App">
-    ${userApps().map((id) => `<button type="button" class="seg-btn" aria-pressed="${id === S.platform}" data-action="platform" data-id="${id}"><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span>${esc(PLATFORMS[id].name)}</button>`).join("")}
+  return `<div class="app-icons" role="group" aria-label="App">
+    ${userApps().map((id) => `<button type="button" class="app-icon" aria-pressed="${id === S.platform}" aria-label="${esc(PLATFORMS[id].name)}" title="${esc(PLATFORMS[id].name)}" data-action="platform" data-id="${id}">${pfIcon(id)}</button>`).join("")}
   </div>`;
 }
 function viewMomentFull() {
@@ -1308,7 +1318,6 @@ function viewHome() {
     : today.length ? `${left} of your ${goal} minutes are still yours today.`
     : `You have ${goal} minutes to spend on purpose.`;
   return `<div class="home">
-    ${blocked}
     ${viewMoment()}
     <header class="hi">
       <p class="hello">${greeting()}, ${esc(displayName())}</p>
@@ -1316,8 +1325,6 @@ function viewHome() {
       <p class="hi-sub">${sub}</p>
     </header>
     <form class="go feature" data-submit="go" novalidate>
-      ${markArt()}
-      <p class="kicker">Search on purpose</p>
       <h2 id="go-q">What are you looking for?</h2>
       <label class="search-box" for="intent">${ICONS.search}<input id="intent" autocomplete="off" enterkeyhint="go" maxlength="120" placeholder="easy injera recipe" aria-labelledby="go-q"></label>
       ${S.intentError ? '<p class="field-error">Type what you\'re looking for first.</p>' : ""}
@@ -1326,18 +1333,13 @@ function viewHome() {
       <div class="pick"><span>For</span><div class="seg" role="group" aria-label="Time you need">${SEARCH_MINUTES.map((m) => `<button type="button" class="seg-btn" aria-pressed="${m === S.minutes}" data-action="minutes" data-min="${m}">${m} min</button>`).join("")}</div></div>
       <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener">Go to ${esc(pf.name)}${ICONS.arrowR}</a>
     </form>
-    <button class="today-card" data-action="tab" data-tab="today">
-      ${gauge(left / goal, left, "min", `${left} of ${goal} minutes left today`)}
-      <span class="today-tx"><b>${used >= goal ? "Budget used for today" : `${left} of ${goal} min left today`}</b><small>${st.days ? esc(streakText(st)) + " · " : ""}${today.length} ${today.length === 1 ? "visit" : "visits"} today${quiet ? ` · quiet hours until ${hourName(quietSet().to)}` : ""}</small></span>
-      <span class="today-go">See your day${ICONS.chev}</span>
-    </button>
   </div>`;
 }
 
 // ----- First-time tour: points at each part of the app, one at a time -----
 const TOUR = [
   [".go .search-box", "Start here", "Type what you're looking for. For example: “easy injera recipe”."],
-  [".go .pick", "Pick the app and the time", "Tap the app you want, then how many minutes you need."],
+  [".go .pick", "Pick the app and the time", "Tap the icon of the app you want, then how many minutes you need."],
   [".go-btn", "Then tap Go", "OwnIt opens the app straight on your search, with a timer. When time's up, it brings you back."],
   [".tabbar [data-tab=today], .sidebar [data-tab=today]", "Today", "Your daily budget, your visits and the time your phone counted. All in one place."],
   [".tabbar [data-tab=saved], .sidebar [data-tab=saved]", "Saved", "Videos you shared to OwnIt, sorted into categories, so you can watch them on purpose later."],
@@ -3229,7 +3231,7 @@ window.ownitAuthCallback = (fragment) => {
   withBusy(async () => { await S.api.sessionFromLink(fragment); });
 };
 window.ownitBlocked = (platform) => {
-  if (PLATFORMS[platform]) { Autopilot.add(platform); S.blocked = platform; S.platform = platform; }
+  if (PLATFORMS[platform]) { Autopilot.add(platform); S.platform = platform; setTimeout(() => toast(`Say what you're looking for first, then go to ${PLATFORMS[platform].name}.`), 300); }
   if (S.phase !== "app") return;
   S.tab = "home"; render(); window.scrollTo({ top: 0 });
   setTimeout(() => $("#intent")?.focus(), 250);

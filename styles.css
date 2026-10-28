@@ -2337,3 +2337,13 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 @media (prefers-reduced-motion: reduce) { .sc-next, .lp-more i { animation: none; } }
 .set-card .small-note { margin: 10px 0 0; font-size: 13.5px; color: var(--muted); }
 .set-card .small-note a { color: var(--ink); font-weight: 700; }
+
+/* ---------- Home: app icons instead of names ---------- */
+.app-icons { display: flex; flex-wrap: wrap; gap: 10px; }
+.app-icon { display: grid; place-items: center; width: 52px; height: 52px; padding: 0; border: 0; border-radius: 50%; background: var(--card); box-shadow: 0 0 0 1.5px var(--hair); cursor: pointer; transition: transform .15s ease, box-shadow .2s ease; }
+.app-icon:active { transform: scale(.94); }
+.app-icon[aria-pressed="true"] { box-shadow: 0 0 0 3px var(--on), 0 6px 16px -8px rgba(18, 34, 74, .5); }
+.pf-icon { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: var(--c); overflow: hidden; }
+.pf-icon b { font-family: var(--display); font-weight: 800; font-size: 17px; color: #fff; }
+.pf-icon img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: var(--card); }
+.go .pick > span { align-self: center; }
