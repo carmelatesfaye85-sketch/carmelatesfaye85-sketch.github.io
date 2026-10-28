@@ -2459,3 +2459,9 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 :root[data-mode="light"][data-colour="navy"] .shell .menu-ic { background: #EDF1FB; }
 :root[data-mode="light"][data-colour="navy"] .shell .tabbar { background: color-mix(in srgb, #FFFFFF 94%, transparent); }
 :root[data-mode="light"][data-colour="navy"] .shell .me-btn { background: #EDF1FB; }
+
+/* ---------- "+" next to the apps: add another app ---------- */
+.app-add .app-ring { color: var(--ink); background: transparent; box-shadow: 0 0 0 1.5px var(--hair); border: 1.5px dashed transparent; }
+.app-add .app-ring svg { width: 24px; height: 24px; }
+:root[data-mode="light"][data-colour="navy"] .home .app-add .app-ring { background: #EDF1FB; box-shadow: 0 0 0 1.5px #C9D5F0; }
+.add-app { scroll-margin-top: 90px; }

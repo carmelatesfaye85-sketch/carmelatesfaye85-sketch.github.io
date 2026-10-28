@@ -1247,6 +1247,7 @@ function pfIcon(id) {
 function appPicker() {
   return `<div class="app-icons" role="group" aria-label="App">
     ${userApps().map((id) => `<button type="button" class="app-icon" aria-pressed="${id === S.platform}" data-action="platform" data-id="${id}"><span class="app-ring">${pfIcon(id)}</span><span class="app-name">${esc(PLATFORMS[id].name)}</span></button>`).join("")}
+    <button type="button" class="app-icon app-add" data-action="app-add-go"><span class="app-ring" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span><span class="app-name">Add</span></button>
   </div>`;
 }
 function viewMomentFull() {
@@ -3079,6 +3080,10 @@ const actions = {
   "tour-next"() { if (S.tour >= TOUR.length - 1) actions["tour-end"](); else { S.tour++; render(); } },
   "tour-end"() { S.tour = null; store.set("ownit.tourDone", true); S.tab = "home"; render(); window.scrollTo({ top: 0 }); },
   "tour-start"() { S.tour = 0; S.tab = "home"; render(); },
+  "app-add-go"() {
+    S.addApp = true; S.addAppErr = null; goTo("settings");
+    setTimeout(() => document.querySelector(".add-app")?.scrollIntoView({ block: "start", behavior: "smooth" }), 80);
+  },
   "app-add-open"() { S.addApp = true; S.addAppErr = null; render(); },
   "app-add-close"() { S.addApp = false; S.addAppErr = null; render(); },
   "app-add"(el) {
