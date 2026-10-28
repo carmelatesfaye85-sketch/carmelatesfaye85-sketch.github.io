@@ -479,7 +479,7 @@ const Notify = {
     const reg = await this.registration();
     const payload = {
       title: "Time's up",
-      body: v.kind === "free" ? "Your free scroll is over. Was it worth it? Tap to check in." : `Did you find "${v.intent}"? Tap to check in.`,
+      body: v.kind === "free" ? "Your scroll time is over. Time to come back." : `Your time for "${v.intent}" is over. Time to come back.`,
       tag: "ownit-visit-" + v.id,
     };
     if (reg?.active) reg.active.postMessage({ type: "ownit-notify", payload });
@@ -547,7 +547,14 @@ const S = {
 };
 const root = document.getElementById("root");
 
-function openVisit() { return S.visits.find((v) => !v.outcome) || null; }
+/** The visit that is running right now (its time isn't up and it wasn't ended). */
+function openVisit() { return S.visits.find((v) => !v.outcome && !v.ended_at && Date.now() < ms(v.started_at) + v.planned_minutes * 60000) || null; }
+/** Ends a visit quietly: no questions, it just stops counting. */
+function finishVisit(v, at) {
+  if (!v || v.ended_at) return;
+  v.ended_at = new Date(Math.min(at || Date.now(), ms(v.started_at) + v.planned_minutes * 60000)).toISOString();
+  if (!String(v.id).startsWith("pending-")) S.api.updateVisit(v.id, { ended_at: v.ended_at }).catch(() => {});
+}
 /**
  * A visit whose time ran out more than 10 minutes ago and was never ended (the phone died, or was
  * switched off, while the timer ran): end it at its planned time, so it stops counting.
@@ -557,12 +564,12 @@ function closeStaleVisits() {
   for (const v of S.visits) {
     if (v.outcome || v.ended_at) continue;
     const end = ms(v.started_at) + v.planned_minutes * 60000;
-    if (now < end + 10 * 60000) continue;
+    if (now < end) continue;
     v.ended_at = new Date(end).toISOString();
     if (!String(v.id).startsWith("pending-")) S.api.updateVisit(v.id, { ended_at: v.ended_at }).catch(() => {});
   }
 }
-function visitMode(v) { return !v ? null : v.ended_at || Date.now() >= ms(v.started_at) + v.planned_minutes * 60000 ? "checkin" : "active"; }
+function visitMode(v) { return v ? "active" : null; }
 function userApps() {
   const picked = (S.profile?.apps || []).filter((a) => PLATFORMS[a]);
   const rest = Object.keys(PLATFORMS).filter((a) => !picked.includes(a));
@@ -700,7 +707,7 @@ function viewWeekReport(where) {
       <div class="pane-head"><div><p class="kicker">Weekly report</p><h2>${fmtDay(lastMon)} to ${fmtDay(addDays(lastMon, 6))}</h2></div>${where === "home" ? `<button class="see-all" data-action="report-close" aria-label="Close the weekly report">Close</button>` : ""}</div>
       <ul class="stats four">
         <li>${ICONS.clock}<b>${r.mins}</b><span>minutes</span></li>
-        <li>${ICONS.checkc}<b>${r.rate == null ? "–" : r.rate + "%"}</b><span>on purpose</span></li>
+        <li>${ICONS.arrow}<b>${r.visits}</b><span>${r.visits === 1 ? "visit" : "visits"}</span></li>
         <li>${ICONS.target}<b>${r.kept}/7</b><span>days in budget</span></li>
         <li>${ICONS.bolt}<b>${r.auto}</b><span>on autopilot</span></li>
       </ul>
@@ -758,7 +765,12 @@ function launch(p, el, e) {
     setTimeout(() => { S.showFree = false; startVisit("free", "", p.mins, "", p.platform); }, 0);
     return;
   }
-  if (APP) { e?.preventDefault(); appStartVisit(p.platform, "search", p.q, p.mins, searchLink(p.platform, p.q)); }
+  if (APP) {
+    e?.preventDefault();
+    // If the app won't take the search link, open it the simple way: the app itself, with the search copied.
+    const r = appStartVisit(p.platform, "search", p.q, p.mins, searchLink(p.platform, p.q));
+    if (r === "none") appCall("startVisit", p.platform, "search", p.q, p.mins);
+  }
   else {
     if (el) el.href = searchLink(p.platform, p.q);   // the link opens the app at this address
     unlockAudio();
@@ -1186,13 +1198,13 @@ function viewApp() {
   if (!PAGES[S.tab] && S.tab !== "menu") S.tab = "home";
   let page;
   if (mode === "active") page = viewActive(v);
-  else if (mode === "checkin") page = viewCheckin(v);
   else if (S.linkTest) page = viewLinkTest();
   else page = { today: viewToday, saved: viewSaved, insights: viewInsights, menu: viewMenu, scroll: viewScroll, settings: viewSettings, guide: viewGuide, answers: viewAnswers, account: viewAccount }[S.tab]?.() ?? viewHome();
   if (S.draft) page += viewSaveSheet(mode === "active" ? v : null);
   page += viewMomentFull();
   page += viewPause();
   page += viewAppSheet();
+  page += viewPlayer();
   if (!mode && !setup) { maybeStartTour(); page += viewTour(); }
 
   const current = mode ? "home" : TABS.includes(S.tab) ? S.tab : "menu";
@@ -1283,11 +1295,12 @@ function fmtTime(iso) { const d = new Date(iso); return d.getHours() + ":" + Str
 /** One visit on a timeline: when, how it went, what it was. */
 function timeRow(v, when) {
   const title = v.kind === "free" ? `Free scroll on ${pfName(v.platform)}` : v.intent;
-  const status = v.outcome ? OUTCOME_WORD[v.outcome] : "In progress";
-  const mark = { found: ICONS.check, partly: "~", distracted: "×" }[v.outcome] || "";
+  const running = openVisit() === v;
+  const status = v.outcome ? OUTCOME_WORD[v.outcome] : running ? "In progress" : "Done";
+  const mark = { found: ICONS.check, partly: "~", distracted: "×" }[v.outcome] || (running ? "" : ICONS.check);
   return `<li class="tl-row">
     <time>${esc(when)}</time>
-    <span class="tl-node n-${v.outcome || "open"}" role="img" aria-label="${esc(status)}">${mark}</span>
+    <span class="tl-node n-${v.outcome || (running ? "open" : "found")}" role="img" aria-label="${esc(status)}">${mark}</span>
     <div class="tl-tx"><b>${esc(title)}</b><small>${esc(pfName(v.platform))} · ${Math.max(1, Math.round(visitMinutes(v)))} min · ${esc(status)}</small></div>
   </li>`;
 }
@@ -1484,8 +1497,8 @@ function viewToday() {
       </div>
       <ul class="stats four">
         <li>${ICONS.arrow}<b>${today.length}</b><span>${today.length === 1 ? "visit" : "visits"}</span></li>
-        <li>${ICONS.checkc}<b>${found}</b><span>found it</span></li>
-        <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+        <li>${ICONS.clock}<b>${used}</b><span>min used</span></li>
+        <li>${ICONS.target}<b>${left}</b><span>min left</span></li>
         <li>${ICONS.bolt}<b>${auto}</b><span>on autopilot</span></li>
       </ul>
     </section>
@@ -1558,6 +1571,12 @@ function viewActive(v) {
     ${notifyCard(true)}`;
 }
 
+/** A small note at the top of Home after a visit ends. */
+function welcomeBack(title, text) {
+  clearTimeout(momentTimer);
+  S.moment = { full: false, outcome: "found", title, text };
+  momentTimer = setTimeout(() => { S.moment = null; if (S.phase === "app") render(); }, 6000);
+}
 function viewCheckin(v) {
   const free = v.kind === "free";
   const end = v.ended_at ? ms(v.ended_at) : Date.now();
@@ -1629,13 +1648,14 @@ function viewInsights() {
       <section class="empty-page">
         ${ART.week()}
         <h2>Nothing to measure yet</h2>
-        <p>Start a visit from Home and check in when you come back. Your week shows up here.</p>
+        <p>Start a visit from Home. Your week shows up here.</p>
         <button class="btn btn-primary" data-action="tab" data-tab="home">Go to Home${ICONS.arrowR}</button>
       </section>
       ${viewRealWeek(S.profile?.daily_goal_minutes || 45)}
       ${viewWeekReport("insights")}`;
   }
-  const trend = lastRate != null && rate != null && rate !== lastRate ? ` ${rate > lastRate ? "Up" : "Down"} from ${lastRate}% last week.` : "";
+  const sofar = (new Date().getDay() + 6) % 7 + 1;
+  let kept = 0; for (let i = 0; i < sofar; i++) if (dayMinutes(addDays(startOfWeek(), i)) <= goal) kept++;
   const dayStart = startOfDay().getTime();
   const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const when = (v) => (ms(v.started_at) >= dayStart ? fmtTime(v.started_at) : days[new Date(v.started_at).getDay()]);
@@ -1643,16 +1663,15 @@ function viewInsights() {
     <header class="page-head"><h1 class="page-title">Insights</h1><p class="page-sub">This week, Monday to today.</p>${streak().days ? `<div class="hi-pills"><span class="pill streak-pill"><i aria-hidden="true"></i>${streakText(streak())}</span></div>` : ""}</header>
     <section class="pane balance">
       <div class="balance-top">
-        ${gauge(rate == null ? 0 : rate / 100, rate == null ? "–" : `<span data-count="${rate}">${rate}</span><i>%</i>`, "on purpose", rate == null ? "No check-ins yet" : `${rate} percent of visits on purpose`)}
+        ${gauge(kept / sofar, `${kept}<i>/${sofar}</i>`, "days", `${kept} of ${sofar} days within your budget`)}
         <div class="balance-tx"><p class="kicker">This week</p>
-          ${rate == null ? `<b>No check-ins yet</b><small>Check in after a visit to see how many were on purpose.</small>`
-            : `<b>${found} of ${done.length} ${done.length === 1 ? "visit" : "visits"}</b><small>got you what you came for.${trend}</small>`}
+          <b>${kept} of ${sofar} ${sofar === 1 ? "day" : "days"} within budget</b><small>Your budget is ${goal} minutes a day.</small>
         </div>
       </div>
       <ul class="stats four">
         <li>${ICONS.arrow}<b>${week.length}</b><span>${week.length === 1 ? "visit" : "visits"}</span></li>
         <li>${ICONS.clock}<b>${minutes}</b><span>minutes</span></li>
-        <li>${ICONS.wave}<b>${pulled}</b><span>feed won</span></li>
+        <li>${ICONS.target}<b>${week.length ? Math.round(minutes / week.length) : 0}</b><span>min a visit</span></li>
         <li>${ICONS.bolt}<b>${Autopilot.between(startOfWeek(), 7)}</b><span>on autopilot</span></li>
       </ul>
     </section>
@@ -1662,15 +1681,6 @@ function viewInsights() {
     </section>
     ${viewRealWeek(goal)}
     ${viewWeekReport("insights")}
-    <section class="pane">
-      <div class="pane-head"><h2>How your visits went</h2></div>
-      ${done.length ? `
-        <div class="stack" role="img" aria-label="${counts.found} found, ${counts.partly} sort of, ${counts.distracted} distracted">
-          ${["found", "partly", "distracted"].map((k) => counts[k] ? `<i class="o-${k}" style="width:${(counts[k] / done.length) * 100}%"></i>` : "").join("")}
-        </div>
-        <div class="legend">${["found", "partly", "distracted"].map((k) => `<span><i class="outcome-dot o-${k}"></i>${OUTCOME_WORD[k]}: ${counts[k]}</span>`).join("")}</div>`
-        : '<p class="tl-empty">Check in after a visit and it will show up here.</p>'}
-    </section>
     ${byPlatform.length > 1 ? `<section class="pane">
       <div class="pane-head"><h2>Where you went</h2></div>
       <ul class="list">${byPlatform.map(([id, n]) => `<li><span class="pf-dot" style="background:${PLATFORMS[id].color}"></span><div class="what"><b>${esc(PLATFORMS[id].name)}</b></div><span class="right">${n} ${n === 1 ? "visit" : "visits"}</span></li>`).join("")}</ul>
@@ -1941,6 +1951,44 @@ async function saveApps(list, msg) {
     setTimeout(() => toast(msg), 0);
   });
 }
+/** The address of a player that shows just this one video (no feed, no "up next"), or null. */
+async function embedFor(url) {
+  let u; try { u = new URL(url); } catch { return null; }
+  const host = u.hostname.replace(/^(www|m|vm|vt)\./, "");
+  if (host.endsWith("youtube.com") || host === "youtu.be") {
+    const id = host === "youtu.be" ? u.pathname.slice(1) : u.searchParams.get("v") || (u.pathname.match(/\/(shorts|embed|live)\/([\w-]{6,})/) || [])[2];
+    return id ? `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?autoplay=1&rel=0&modestbranding=1&playsinline=1` : null;
+  }
+  if (host.endsWith("instagram.com")) {
+    const m = u.pathname.match(/\/(p|reel|reels|tv)\/([\w-]+)/);
+    return m ? `https://www.instagram.com/${m[1] === "reels" ? "reel" : m[1]}/${m[2]}/embed` : null;
+  }
+  if (host.endsWith("tiktok.com")) {
+    let id = (u.pathname.match(/\/(video|photo)\/(\d+)/) || [])[2];
+    if (!id) {
+      try {
+        const j = await (await fetch("https://www.tiktok.com/oembed?url=" + encodeURIComponent(url))).json();
+        id = j.embed_product_id || (String(j.html || "").match(/data-video-id="(\d+)"/) || [])[1];
+      } catch { /* no details */ }
+    }
+    return id ? `https://www.tiktok.com/player/v1/${id}?autoplay=1&rel=0&music_info=1&description=1&controls=1&progress_bar=1&play_button=1&volume_control=1&fullscreen_button=1` : null;
+  }
+  return null;
+}
+/** Plays one saved video inside OwnIt. */
+function viewPlayer() {
+  const p = S.player; if (!p) return "";
+  const r = S.saves.find((x) => x.id === p.id);
+  return `<div class="player" role="dialog" aria-modal="true" aria-label="Saved video">
+    <div class="player-top"><b>${esc(r?.title || "Saved video")}</b><button class="btn btn-light btn-sm" data-action="player-close">Done</button></div>
+    <div class="player-frame">
+      ${p.src ? `<iframe src="${esc(p.src)}" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" title="Saved video"></iframe>`
+        : p.failed ? `<div class="player-msg"><b>This video can't play inside OwnIt.</b><span>OwnIt only plays the video you saved, never the feed. Try saving the full video link again.</span></div>`
+        : `<div class="spinner" role="status" aria-label="Loading"></div>`}
+    </div>
+    <p class="player-note">Only this video. No feed, no "up next".</p>
+  </div>`;
+}
 /** The "+" on Home: the apps on this phone (Android app), or a short list of popular apps, to add in one tap. */
 function viewAppSheet() {
   if (!S.appSheet) return "";
@@ -1969,14 +2017,18 @@ function viewShortsSetting(st) {
     return st.version ? setting("update", "New in the Android app", "Hide Reels and Shorts, real time per app, and a home screen widget.", `<a class="btn btn-outline" href="${ANDROID_APK}">Update the app</a>`,
       ["Tap <b>Update the app</b>. The new OwnIt.apk downloads.", "Open the file and tap <b>Update</b>. Your account and answers stay.", "If Play Protect shows a warning: tap <b>More details</b>, then <b>Install anyway</b>."]) : "";
   }
+  const stay = String(st.features || "").includes("stay");
+  const service = stay ? "OwnIt: stay on what you came for" : "OwnIt: hide Reels and Shorts";
   const steps = `<div class="set shorts-setup">
-      <p><b>One more step.</b> Switch on <b>${esc("OwnIt: hide Reels and Shorts")}</b> in your phone's Accessibility settings.</p>
+      <p><b>One more step.</b> Switch on <b>${esc(service)}</b> in your phone's Accessibility settings.</p>
       <button class="btn btn-primary" data-action="shorts-settings">Open Accessibility settings</button>
       <p class="small-note">Can't switch it on, or it says <b>Restricted setting</b>? Tap <button class="link-btn" data-action="app-info">App info</button>, then <b>⋮</b> at the top right, then <b>Allow restricted settings</b>. Then try again.</p>
     </div>`;
-  return setting("shorts", "Hide Reels and Shorts", st.hideShorts && st.shortsOn ? "On. Swiping to the next Reel or Short takes you back." : "Watch the one video you came for, not the endless feed.", toggle("set-shorts", !!st.hideShorts, "Hide Reels and Shorts"),
-    ["In Instagram and YouTube you can watch the Reel or Short you opened.", "When you swipe on to the next one, OwnIt takes you one step back.", "<b>Scroll on purpose</b> visits are left alone.", "Instagram and YouTube change their apps often, so this can stop working after one of their updates."], true)
-    + (st.hideShorts && !st.shortsOn ? steps : "");
+  const title = stay ? "Stay on what you came for" : "Hide Reels and Shorts";
+  return setting("shorts", title, st.hideShorts && st.shortsOn ? (stay ? "On. No TikTok feed during a search, and one Reel or Short at a time." : "On. Swiping to the next Reel or Short takes you back.") : (stay ? "Only your search in TikTok. One Reel or Short at a time." : "Watch the one video you came for, not the endless feed."), toggle("set-shorts", !!st.hideShorts, title),
+    [...(stay ? ["During a search in TikTok, if the For You feed opens, OwnIt takes you back to your search results."] : []), "In Instagram and YouTube you can watch the Reel or Short you opened.", "When you swipe on to the next one, OwnIt takes you one step back.", "<b>Scroll on purpose</b> visits are left alone.", "These apps change often, so this can stop working after one of their updates."], true)
+    + (st.hideShorts && !st.shortsOn ? steps : "")
+    + (!stay ? `<p class="small-note">Update the Android app to also keep TikTok on your search. <a href="${ANDROID_APK}">Update</a></p>` : "");
 }
 function viewSettings() {
   const L = look();
@@ -2065,7 +2117,6 @@ function guideTopics() {
     ["timeup", "When your time is up", null, [
       "On Android, a full screen says <b>Time's up</b> and your phone buzzes.",
       "After 8 seconds it takes you back to OwnIt. You can ask for 2 more minutes, once.",
-      "OwnIt asks: did you find it? Tap the honest answer. It feeds your Insights.",
       "On iPhone and computers you get a notification instead. Tap it to come back."]],
     ["save", "Save a video into a category", "saved", [
       `In ${pf}, tap <b>Share</b> on the video.`,
@@ -2124,11 +2175,11 @@ function guideTopics() {
       "Find <b>OwnIt</b>, touch and hold it, and drag it where you want it.",
       "It shows your minutes left today and your streak.",
       "Tap <b>What are you looking for?</b> on it to search straight away."]],
-    ["shorts", "Hide Reels and Shorts (Android)", "settings", [
-      "Open <b>Settings</b> and switch on <b>Hide Reels and Shorts</b>.",
-      "Tap <b>Open Accessibility settings</b>, find <b>OwnIt: hide Reels and Shorts</b> and switch it on.",
+    ["shorts", "Stay on what you came for (Android)", "settings", [
+      "Open <b>Settings</b> and switch on <b>Stay on what you came for</b>.",
+      "Tap <b>Open Accessibility settings</b>, find <b>OwnIt: stay on what you came for</b> and switch it on.",
       "If it says <b>Restricted setting</b>: open App info for OwnIt, tap <b>⋮</b>, then <b>Allow restricted settings</b>, and try again.",
-      "Now you can watch the one Reel or Short you opened. Swiping to the next one takes you back."]],
+      "Now during a search, TikTok's For You feed takes you back to your results, and Reels and Shorts play one at a time."]],
     ["iphone", "Notifications on iPhone", null, [
       "Open OwnIt in <b>Safari</b>.", "Tap <b>Share</b>, then <b>Add to Home Screen</b>.",
       "Open OwnIt from the Home Screen icon.", "Go to <b>Settings</b> and tap <b>Turn on</b> under Notifications, then <b>Allow</b>."]],
@@ -2330,7 +2381,7 @@ const dotMini = (cls = "") => `<svg class="dot-mini ${cls}" viewBox="0 0 120 120
 const LP_HOW = [
   ["Say what you want", "Type what you're looking for before you go in."],
   ["Go straight to it", "OwnIt opens the search results, not the feed, with a timer you choose."],
-  ["Come back out", "When time's up, OwnIt calls you back and asks: did you find it?"],
+  ["Come back out", "When time's up, OwnIt calls you back out."],
 ];
 
 /** How much slower than the original the "How it works" phone plays (people need time to read). */
@@ -2361,13 +2412,12 @@ function lpHow() {
           <div class="hp-grid">${thumbs.map((c, i) => `<i style="--c:${c};--i:${i}"></i>`).join("")}</div>
         </div>
         <div class="hp-view hp-check">
-          <b class="hp-q"><span>Did you</span> find it?</b>
-          <div class="hp-ans yes"><i>✓</i>Yes, I found it</div>
-          <div class="hp-ans">Sort of</div>
-          <div class="hp-ans">No, I got distracted</div>
+          <b class="hp-q"><span>Welcome</span> back.</b>
+          <div class="hp-ans yes"><i>✓</i>easy injera recipe</div>
+          <div class="hp-ans">5 min, on purpose</div>
         </div>
         <div class="hp-view hp-win"><span class="hp-mark big">${ICONS.logo}</span><b>Loop broken.</b></div>
-        <div class="hp-view hp-up"><span class="hp-mark big">${ICONS.logo}</span><b>Time's up</b><small>Did you find “easy injera recipe”?</small></div>
+        <div class="hp-view hp-up"><span class="hp-mark big">${ICONS.logo}</span><b>Time's up</b><small>Taking you back to OwnIt…</small></div>
       </div>
     </div></div></div>
   </div>`;
@@ -2915,14 +2965,17 @@ function chime() {
   } catch { /* sound is optional */ }
 }
 function tick() {
-  const v = openVisit();
-  if (!v || v.ended_at) return;
+  const v = S.visits.find((x) => !x.outcome && !x.ended_at);
+  if (!v) return;
   const total = v.planned_minutes * 60000;
   const left = ms(v.started_at) + total - Date.now();
   if (left <= 0) {
     chime();
     try { navigator.vibrate?.([300, 120, 300]); } catch { /* optional */ }
     if (document.hidden) { Notify.timeUp(v); document.title = "Time's up · OwnIt"; }
+    finishVisit(v);
+    appCall("endVisit");
+    S.tab = "home"; welcomeBack("Time's up", `Your ${v.planned_minutes} minutes are over. Welcome back.`);
     render();
     return;
   }
@@ -3188,13 +3241,17 @@ const actions = {
     withBusy(async () => { await S.api.deleteSave(id); S.saves = S.saves.filter((x) => x.id !== id); S.editSave = null; setTimeout(() => toast("Deleted."), 0); });
   },
   "save-open"(el, e) {
+    // Saved videos play inside OwnIt, so there's no feed to scroll into afterwards.
     const r = S.saves.find((x) => x.id === el.dataset.id); if (!r) return;
-    if (!PLATFORMS[r.platform]) { if (APP) appCall("openExternal", r.url); else window.open(r.url, "_blank", "noopener"); return; }
-    const mins = S.minutes;
-    const label = r.title || "Saved video";
-    if (APP) { e.preventDefault(); appStartVisit(r.platform, "search", label, mins, r.url); }
-    setTimeout(() => startVisit("search", label, mins, r.url, r.platform), 0);
+    e?.preventDefault();
+    S.player = { id: r.id, src: null, failed: false }; render();
+    embedFor(r.url).then((src) => {
+      if (!S.player || S.player.id !== r.id) return;
+      if (src) S.player.src = src; else S.player.failed = true;
+      render();
+    });
   },
+  "player-close"() { S.player = null; render(); },
 
   // search link test
   "lt-open"() { S.tab = "settings"; S.linkTest = { q: "injera recipe", asked: null, result: {} }; render(); window.scrollTo({ top: 0 }); },
@@ -3220,8 +3277,9 @@ const actions = {
   async done() {
     const v = openVisit(); if (!v) return;
     appCall("endVisit");
-    v.ended_at = new Date().toISOString(); render();
-    if (!String(v.id).startsWith("pending-")) S.api.updateVisit(v.id, { ended_at: v.ended_at }).catch(() => {});
+    finishVisit(v);
+    S.tab = "home"; welcomeBack("Back on purpose", "You came back out before your time was up.");
+    render();
   },
   checkin(el) {
     const v = openVisit(); if (!v) return;
@@ -3367,8 +3425,8 @@ window.ownitBlocked = (platform) => {
 };
 window.ownitTimeUp = () => {
   if (S.phase !== "app") return;
-  const v = openVisit();
-  if (v && !v.ended_at && visitMode(v) === "checkin") v.ended_at = new Date().toISOString();
+  const v = S.visits.find((x) => !x.outcome && !x.ended_at);
+  if (v && Date.now() >= ms(v.started_at) + v.planned_minutes * 60000) { finishVisit(v); welcomeBack("Time's up", `Your ${v.planned_minutes} minutes are over. Welcome back.`); }
   S.tab = "home"; render(); window.scrollTo({ top: 0 });
 };
 /** The widget's search button: open Home with the search box ready. */

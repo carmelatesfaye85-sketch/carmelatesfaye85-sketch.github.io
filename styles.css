@@ -2493,3 +2493,14 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 .shell { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20260%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20fill%3D%22%23E1E8F8%22%20d%3D%22M0%20130c60-26%20120%206%20190%2014s130-30%20210-14v130H0z%22/%3E%3Cpath%20fill%3D%22%23D3DDF3%22%20d%3D%22M0%20190c80-20%20150%2012%20220%2010s110-26%20180-16v76H0z%22/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: bottom center; background-size: 100% 42vh; background-attachment: fixed; }
 :root[data-mode="dark"] .shell { background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20400%20260%22%20preserveAspectRatio%3D%22none%22%3E%3Cpath%20fill%3D%22rgba%28242%2C239%2C230%2C0.05%29%22%20d%3D%22M0%20130c60-26%20120%206%20190%2014s130-30%20210-14v130H0z%22/%3E%3Cpath%20fill%3D%22rgba%28242%2C239%2C230%2C0.08%29%22%20d%3D%22M0%20190c80-20%20150%2012%20220%2010s110-26%20180-16v76H0z%22/%3E%3C/svg%3E"); }
 .sheet-search { background: var(--tint-soft) !important; border: 1.5px solid var(--hair) !important; }
+
+/* ---------- saved videos play inside OwnIt ---------- */
+.player { position: fixed; inset: 0; z-index: 210; display: flex; flex-direction: column; gap: 12px; padding: calc(14px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px)); background: #0B1430; color: #F2EFE6; }
+.player-top { display: flex; align-items: center; gap: 12px; }
+.player-top b { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.player-frame { flex: 1; min-height: 0; display: grid; place-items: center; border-radius: 20px; overflow: hidden; background: #000; }
+.player-frame iframe { width: 100%; height: 100%; border: 0; }
+.player-msg { display: flex; flex-direction: column; gap: 8px; max-width: 300px; padding: 24px; text-align: center; }
+.player-msg span { color: #A3AECF; font-size: 14.5px; }
+.player-note { margin: 0; text-align: center; font-size: 13px; color: #A3AECF; }
+.player .spinner { border-color: rgba(242, 239, 230, .2); border-top-color: #F2EFE6; }
