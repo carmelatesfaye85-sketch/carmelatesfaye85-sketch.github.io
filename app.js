@@ -1208,6 +1208,7 @@ function viewApp() {
         </div>
       </aside>
       <div class="main">
+        <svg class="home-floor" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true"><path class="f-2" d="M0 130c60-26 120 6 190 14s130-30 210-14v130H0z"/><path class="f-3" d="M0 190c80-20 150 12 220 10s110-26 180-16v76H0z"/></svg>
         <header class="topbar">
           <span class="logo">${WORDMARK}</span>
           <button class="avatar me-btn" data-action="tab" data-tab="account" aria-label="Your account">${esc(initials(displayName(), S.user?.email))}</button>
@@ -1342,7 +1343,6 @@ function viewHome() {
         <i class="go-spark r" aria-hidden="true"></i>
       </div>
     </form>
-    <svg class="home-floor" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true"><path class="f-2" d="M0 130c60-26 120 6 190 14s130-30 210-14v130H0z"/><path class="f-3" d="M0 190c80-20 150 12 220 10s110-26 180-16v76H0z"/></svg>
   </div>`;
 }
 /** Small line icons used on Home. */
@@ -1497,7 +1497,6 @@ function viewScroll() {
   return `
     ${pageHead("Scroll on purpose", "No search this time. Pick how long, and OwnIt pulls you out when it's over.")}
     <section class="plain-form feature">
-      ${markArt()}
       <p class="kicker">A timed scroll</p>
       <h2>How long this time?</h2>
       <div class="pick"><span>On</span>${appPicker()}</div>

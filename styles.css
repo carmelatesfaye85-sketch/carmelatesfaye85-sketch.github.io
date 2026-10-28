@@ -2439,3 +2439,23 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 :root[data-mode="dark"] .home-floor .f-1 { fill: color-mix(in srgb, var(--brand) 6%, transparent); }
 :root[data-mode="dark"] .home-floor .f-2 { fill: color-mix(in srgb, var(--brand) 10%, transparent); }
 :root[data-mode="dark"] .home-floor .f-3 { fill: color-mix(in srgb, var(--brand) 14%, transparent); }
+
+/* ---------- Every page: the Home look (white cards, light blue, waves at the bottom) ---------- */
+.main { position: relative; isolation: isolate; }
+.home { z-index: auto; }
+:root[data-mode="light"][data-colour="navy"] .shell {
+  --tint: #EDF1FB; --tint-soft: #EDF1FB; --tint-2: #C9D5F0;
+  --card: #FFFFFF; --hair: #D9E1F4;
+  --card-shadow: 0 1px 2px rgba(18, 34, 74, .04), 0 18px 40px -22px rgba(18, 34, 74, .28);
+}
+:root[data-mode="light"][data-colour="navy"] .shell .seg-btn:not([aria-pressed="true"]),
+:root[data-mode="light"][data-colour="navy"] .shell .chip:not([aria-pressed="true"]) { background: #EDF1FB; border-color: #D9E1F4; color: var(--ink); }
+:root[data-mode="light"][data-colour="navy"] .shell .btn-outline { border-color: #D9E1F4; background: #FFFFFF; }
+:root[data-mode="light"][data-colour="navy"] .shell .input { border-color: #D9E1F4; background: #EDF1FB; }
+:root[data-mode="light"][data-colour="navy"] .shell .input:focus { background: #FFFFFF; }
+:root[data-mode="light"][data-colour="navy"] .shell .feature:not(.home-card) { background: #FFFFFF; box-shadow: var(--card-shadow); }
+:root[data-mode="light"][data-colour="navy"] .shell .me-card,
+:root[data-mode="light"][data-colour="navy"] .shell .profile-head { background: #FFFFFF; box-shadow: var(--card-shadow); }
+:root[data-mode="light"][data-colour="navy"] .shell .menu-ic { background: #EDF1FB; }
+:root[data-mode="light"][data-colour="navy"] .shell .tabbar { background: color-mix(in srgb, #FFFFFF 94%, transparent); }
+:root[data-mode="light"][data-colour="navy"] .shell .me-btn { background: #EDF1FB; }
