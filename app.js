@@ -1342,7 +1342,7 @@ function viewHome() {
         <i class="go-spark r" aria-hidden="true"></i>
       </div>
     </form>
-    <svg class="home-floor" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true"><circle class="f-sun" cx="300" cy="96" r="38"/><path class="f-1" d="M0 70c70-30 130 10 200 0s120-60 200-40v230H0z"/><path class="f-2" d="M0 130c60-26 120 6 190 14s130-30 210-14v130H0z"/><path class="f-3" d="M0 190c80-20 150 12 220 10s110-26 180-16v76H0z"/></svg>
+    <svg class="home-floor" viewBox="0 0 400 260" preserveAspectRatio="none" aria-hidden="true"><path class="f-2" d="M0 130c60-26 120 6 190 14s130-30 210-14v130H0z"/><path class="f-3" d="M0 190c80-20 150 12 220 10s110-26 180-16v76H0z"/></svg>
   </div>`;
 }
 /** Small line icons used on Home. */
