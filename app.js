@@ -684,7 +684,7 @@ function inQuiet(now = new Date()) {
   const h = now.getHours();
   return q.from > q.to ? h >= q.from || h < q.to : h >= q.from && h < q.to;
 }
-const breathOn = () => store.get("ownit.breath", true) !== false;
+const breathOn = () => false;   // the breath pause was removed
 /** Totals for the seven days that start on `monday`. */
 function weekReport(monday) {
   const a = monday.getTime(), b = addDays(monday, 7).getTime();
@@ -768,6 +768,7 @@ function launch(p, el, e) {
   if (APP) {
     e?.preventDefault();
     // If the app won't take the search link, open it the simple way: the app itself, with the search copied.
+    navigator.clipboard?.writeText(p.q).catch(() => {});
     const r = appStartVisit(p.platform, "search", p.q, p.mins, searchLink(p.platform, p.q));
     if (r === "none") appCall("startVisit", p.platform, "search", p.q, p.mins);
   }
@@ -1367,6 +1368,7 @@ function viewHome() {
         <a class="btn btn-gold go-btn" data-action="go" href="${pf.search("")}" target="_blank" rel="noopener"><span class="go-plane" aria-hidden="true">${HOME_ICONS.plane}</span><span class="go-label">Go to ${esc(pf.name)}</span>${ICONS.arrowR}</a>
         <i class="go-spark r" aria-hidden="true"></i>
       </div>
+      ${S.platform === "tiktok" && !String(APP?.status ? (() => { try { return JSON.parse(APP.status()).features; } catch { return ""; } })() : "").includes("autosearch") ? `<p class="go-tip">Your search gets copied. If TikTok opens on its feed, tap ${ICONS.search} and paste.</p>` : ""}
     </form>
   </div>`;
 }
@@ -2071,8 +2073,6 @@ function viewSettings() {
         ["This is the total time you want to spend on social apps each day.", "Every visit you start in OwnIt counts toward it.", "The bar on Home shows how much is left. Insights turns red on days you went over."])}
       ${setting("minutes", "Usual search time", "The time already selected when you open Home.", choice("default-minutes", SEARCH_MINUTES.map((m) => [m, m + " min"]), store.get("ownit.minutes", 5), "min"),
         ["Pick the time most of your searches need.", "You can still change it for a single visit on Home."])}
-      ${setting("breath", "A breath before you go", "A four-second pause before OwnIt opens the app.", toggle("set-breath", breathOn(), "A breath before you go"),
-        ["When this is on, tapping <b>Go</b> shows a breathing circle for four seconds.", "Then tap <b>Go to TikTok</b>, or <b>Not now</b> if you changed your mind.", "It is a small moment to check that you really want to go in."], true)}
       ${setting("quiet", "Quiet hours", quietSet().on ? `From ${hourName(quietSet().from)} to ${hourName(quietSet().to)}, going in takes a 15-second wait.` : "A time of day when going in takes a 15-second wait.", toggle("set-quiet", quietSet().on, "Quiet hours"),
         ["Switch it on and pick when your quiet time starts and ends.", "During quiet hours, tapping <b>Go</b> shows a 15-second wait before the app opens.", "Good for sleep: most people scroll most at night."], true)}
       ${quietSet().on ? `<div class="set quiet-times">
@@ -3211,7 +3211,6 @@ const actions = {
   },
   "set-shorts"(el) { store.set("ownit.shortsChosen", true); appCall("setHideShorts", el.dataset.id === "on"); render(); },
   "shorts-settings"() { appCall("openAccessibilitySettings"); },
-  "set-breath"(el) { store.set("ownit.breath", el.dataset.id === "on"); render(); },
   "set-quiet"(el) { store.set("ownit.quiet", { ...quietSet(), on: el.dataset.id === "on" }); render(); },
   "quiet-from"(el) { store.set("ownit.quiet", { ...quietSet(), from: Number(el.dataset.id) }); render(); },
   "quiet-to"(el) { store.set("ownit.quiet", { ...quietSet(), to: Number(el.dataset.id) }); render(); },
