@@ -718,6 +718,24 @@ function showReportOnHome() {
   const dow = (new Date().getDay() + 6) % 7;   // Monday = 0
   return dow <= 2 && store.get("ownit.reportSeen", "") !== dayKey(startOfWeek());
 }
+/** Before a TikTok search, when OwnIt can't type the search in yet: one switch to turn on. */
+function viewAutoAsk() {
+  if (!S.autoAsk) return "";
+  return `<div class="app-sheet-back" data-action="auto-close"></div>
+  <div class="app-sheet auto-ask" role="dialog" aria-modal="true" aria-labelledby="auto-t">
+    <div class="sheet-grab" aria-hidden="true"></div>
+    <div class="sheet-head"><h2 id="auto-t">Always land on your search</h2><button class="sheet-x" data-action="auto-close" aria-label="Close">×</button></div>
+    <p>OwnIt opens TikTok right on your results. But sometimes TikTok shows its For You feed instead. Switch on <b>OwnIt</b> once, and when that happens OwnIt types “${esc(S.autoAsk.q)}” in for you.</p>
+    <ol class="auto-steps">
+      <li>Tap <b>Switch it on</b>.</li>
+      <li>Find <b>OwnIt: stay on what you came for</b> (it may be under <b>Downloaded apps</b>) and switch it on.</li>
+      <li>Come back here and tap <b>Go</b> again.</li>
+    </ol>
+    <button class="btn btn-primary" data-action="auto-on">Switch it on</button>
+    <button class="btn btn-light" data-action="auto-skip">Go without it</button>
+    <p class="small-note">It says <b>Restricted setting</b>? Tap <button class="link-btn" data-action="app-info">App info</button>, then <b>⋮</b> at the top right, then <b>Allow restricted settings</b>. Then try again.</p>
+  </div>`;
+}
 /** The pause before going in: a breath, or a longer wait during quiet hours. */
 function viewPause() {
   const p = S.pause; if (!p) return "";
@@ -1215,6 +1233,7 @@ function viewApp() {
   if (S.draft) page += viewSaveSheet(mode === "active" ? v : null);
   page += viewMomentFull();
   page += viewPause();
+  page += viewAutoAsk();
   page += viewAppSheet();
   page += viewPlayer();
   if (!mode && !setup) { maybeStartTour(); page += viewTour(); }
@@ -3154,8 +3173,16 @@ const actions = {
     if (!q) { e.preventDefault(); S.intentError = true; render(); $("#intent")?.focus(); return; }
     const p = { kind: "search", q, mins: S.minutes, platform: S.platform };
     if (startPause(p)) { e.preventDefault(); return; }
+    // Once: ask to switch on the backup that types the search in when TikTok shows its feed instead.
+    if (APP && p.platform === "tiktok") {
+      const st = appStatus();
+      if (String(st.features || "").includes("autosearch") && !st.shortsOn && !store.get("ownit.autoAsked", false)) { store.set("ownit.autoAsked", true); e.preventDefault(); S.autoAsk = p; render(); return; }
+    }
     launch(p, el, e);
   },
+  "auto-on"() { appCall("openAccessibilitySettings"); },
+  "auto-skip"(el, e) { const p = S.autoAsk; S.autoAsk = null; if (p) launch(p, el, e); render(); },
+  "auto-close"() { S.autoAsk = null; render(); },
   "free-go"(el, e) {
     const p = { kind: "free", q: "", mins: S.freeMinutes, platform: S.platform };
     if (startPause(p)) { e.preventDefault(); return; }

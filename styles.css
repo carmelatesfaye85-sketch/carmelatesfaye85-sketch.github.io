@@ -2509,3 +2509,8 @@ select.input { appearance: auto; width: 100%; font: inherit; color: var(--ink); 
 /* ---------- TikTok tip under Go ---------- */
 .go-tip { margin: 10px 0 0; text-align: center; font-size: 13px; line-height: 1.4; color: var(--muted); }
 .go-tip svg { width: 14px; height: 14px; vertical-align: -2px; }
+
+/* ---------- ask to switch on auto-search before a TikTok search ---------- */
+.auto-ask p { margin: 0; font-size: 15px; line-height: 1.5; }
+.auto-steps { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; line-height: 1.45; }
+.auto-ask .btn { width: 100%; justify-content: center; }
